@@ -18,12 +18,12 @@ afterEach(() => {
 });
 
 function bundle(lessonId: string, number: number): LessonBundle {
-  const base = { lessonId };
+  const base = { lessonId, order: 0 };
   return {
     lesson: { id: lessonId, number, title: `Lezione ${number}`, summary: '', createdAt: number, files: ['a.pdf'] },
     vocab: [
       { ...base, id: `${lessonId}-v1`, hanzi: '朋友', pinyin: 'péngyou', meaning: 'amico', pos: 'N.', note: '' },
-      { ...base, id: `${lessonId}-v2`, hanzi: '喜欢', pinyin: 'xǐhuan', meaning: 'piacere', pos: 'V.', note: '' },
+      { ...base, order: 1, id: `${lessonId}-v2`, hanzi: '喜欢', pinyin: 'xǐhuan', meaning: 'piacere', pos: 'V.', note: '' },
     ],
     grammar: [{ ...base, id: `${lessonId}-g1`, title: '也', pattern: 'S + 也 + V', explanation: 'anche', examples: [] }],
     sentences: [
@@ -69,6 +69,15 @@ describe('database', () => {
     expect(snap.lessons.map((l) => l.id)).toEqual(['a', 'b']);
     expect(snap.vocab).toHaveLength(4);
     expect(snap.sentences.find((s) => s.id === 'a-s1')).toEqual(bundle('a', 1).sentences[0]);
+  });
+
+  it('returns items in lesson order, whatever their ids', async () => {
+    const db = await freshDb();
+    const b = bundle('a', 1);
+    // Ids that sort differently from the lesson order (as random ids do).
+    b.vocab = ['v1', 'v10', 'v11', 'v2', 'v3'].map((suffix, i) => ({ ...b.vocab[0]!, id: `a-${suffix}`, order: 4 - i }));
+    await db.saveLesson(b);
+    expect((await db.snapshot()).vocab.map((v) => v.id)).toEqual(['a-v3', 'a-v2', 'a-v11', 'a-v10', 'a-v1']);
   });
 
   it('keeps progress and accepted answers', async () => {

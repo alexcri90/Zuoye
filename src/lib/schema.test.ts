@@ -12,7 +12,7 @@ import {
 } from './schema.ts';
 
 describe('strict schemas', () => {
-  const vocab = { id: 'v1', lessonId: 'l1', hanzi: '朋友', pinyin: 'péngyou', meaning: 'amico', pos: 'N.', note: '' };
+  const vocab = { id: 'v1', lessonId: 'l1', order: 0, hanzi: '朋友', pinyin: 'péngyou', meaning: 'amico', pos: 'N.', note: '' };
 
   it('accept a well-formed record', () => {
     expect(VocabSchema.parse(vocab)).toEqual(vocab);
@@ -30,6 +30,7 @@ describe('strict schemas', () => {
     const sentence = {
       id: 's1',
       lessonId: 'l1',
+      order: 0,
       zh: '我是学生。',
       pinyin: 'Wǒ shì xuésheng.',
       it: 'Sono uno studente.',

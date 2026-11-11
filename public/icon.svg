@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" fill="#f7f4ee"/>
+  <rect x="96" y="96" width="320" height="320" rx="56" fill="#c8372d"/>
+  <rect x="116" y="116" width="280" height="280" rx="40" fill="none" stroke="#fff8f2" stroke-opacity=".3" stroke-width="8"/>
+  <g fill="none" stroke="#fff8f2" stroke-width="18" stroke-linecap="round">
+    <path d="M176 256h160M256 176v160" stroke-opacity=".28" stroke-dasharray="2 30"/>
+  </g>
+  <text x="256" y="306" text-anchor="middle" font-size="150" fill="#fff8f2" font-family="'Kaiti SC',STKaiti,KaiTi,'Songti SC',SimSun,serif">作业</text>
+</svg>

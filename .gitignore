@@ -22,3 +22,6 @@ coverage/
 .DS_Store
 Thumbs.db
 *.log
+
+# Screenshot e risultati dei controlli nel browser
+e2e-out/

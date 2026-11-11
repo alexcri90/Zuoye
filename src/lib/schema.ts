@@ -36,6 +36,8 @@ export const LIMITS = {
 
 const id = z.string().min(1).max(64);
 const str = (max: number) => z.string().max(max);
+/** Position inside the lesson, as in the course material. */
+const order = z.number().int().min(0).max(100000);
 const list = <T extends z.ZodType>(item: T, max: number) => z.array(item).max(max);
 
 export const LessonSchema = z.object({
@@ -50,6 +52,7 @@ export const LessonSchema = z.object({
 export const VocabSchema = z.object({
   id,
   lessonId: id,
+  order,
   hanzi: str(LIMITS.hanzi).min(1),
   pinyin: str(LIMITS.pinyin),
   meaning: str(LIMITS.short),
@@ -66,6 +69,7 @@ export const ExampleSchema = z.object({
 export const GrammarSchema = z.object({
   id,
   lessonId: id,
+  order,
   title: str(LIMITS.short),
   pattern: str(LIMITS.short),
   explanation: str(LIMITS.long),
@@ -75,6 +79,7 @@ export const GrammarSchema = z.object({
 export const SentenceSchema = z.object({
   id,
   lessonId: id,
+  order,
   zh: str(LIMITS.short).min(1),
   pinyin: str(LIMITS.pinyin),
   it: str(LIMITS.pinyin),
@@ -89,6 +94,7 @@ export const SentenceSchema = z.object({
 export const ClozeSchema = z.object({
   id,
   lessonId: id,
+  order,
   /** Sentence with exactly one BLANK. */
   text: str(LIMITS.short).min(1),
   answer: str(LIMITS.hanzi).min(1),

@@ -55,6 +55,8 @@ export class Database {
     ]);
     await tx.done;
     lessons.sort((a, b) => a.number - b.number || a.createdAt - b.createdAt);
+    // The database returns rows by id; the lesson's own order is what matters.
+    for (const rows of [vocab, grammar, sentences, clozes]) rows.sort((a, b) => a.order - b.order);
     return { lessons, vocab, grammar, sentences, clozes, cards };
   }
 

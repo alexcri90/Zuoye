@@ -119,7 +119,10 @@ export function vendoredData(): Plugin {
 export const CONTENT_SECURITY_POLICY = [
   "default-src 'self'",
   "script-src 'self' 'wasm-unsafe-eval'",
-  "style-src 'self' 'unsafe-inline'",
+  // Stylesheets only from our origin; inline style attributes are allowed
+  // because Hanzi Writer positions its drawing with them. No inline <style>.
+  "style-src 'self'",
+  "style-src-attr 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self'",
   "connect-src 'self' https://generativelanguage.googleapis.com",

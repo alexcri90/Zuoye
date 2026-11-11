@@ -70,5 +70,13 @@ self.addEventListener('fetch', (event) => {
   }
   if (rel.startsWith('assets/')) {
     event.respondWith(cacheFirst(SHELL_CACHE, request));
+    return;
   }
+  // Everything else in the app shell (icons, manifest): from the cache when it is there.
+  event.respondWith(
+    caches
+      .open(SHELL_CACHE)
+      .then((cache) => cache.match(request))
+      .then((hit) => hit || fetch(request)),
+  );
 });
