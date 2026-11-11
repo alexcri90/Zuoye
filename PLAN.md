@@ -244,8 +244,10 @@ Not planned for now: "find the error", sentence transformation and dialogue comp
 
 ## 9. Pinyin engine
 
-- **Parsing.** Lower-case, Unicode-decompose, read tone marks and digits, treat spaces/apostrophes/digits as syllable boundaries, split letter runs with the table of ~410 valid syllables (longest match with backtracking). `ü` = `v` = `u:`; `lue/nue` = `lüe/nüe`; trailing `r` is erhua.
-- **Comparison.** Compare the joined letters and the ordered list of tones, not the syllable split. This makes `fan gan` and `fangan` equal regardless of how each was segmented.
+- **Parsing.** Lower-case, Unicode-decompose, read tone marks and digits, treat spaces/apostrophes/digits as syllable boundaries, split letter runs into syllables with backtracking. `ü` = `v` = `u:`; `lue/nue` = `lüe/nüe`; trailing `r` is erhua.
+  - *Changed 2026-11-11:* syllables are recognised **by rule** (initial + final, nine small rule groups) instead of a table of ~410 syllables. Reason: the table could not be written (19.1), and the rule is shorter. It accepts a few impossible syllables, which cannot produce a wrong correction because an answer is only ever compared with the expected pinyin.
+  - When a run can be cut in several ways, pinyin spelling decides: inside a word, a syllable starting with a vowel needs an apostrophe, so `fangan` is fan-gan and `xian` is one syllable. If the lesson omits the apostrophe (`kěài`), the tone marks and the number of characters settle it.
+- **Comparison.** Compare the joined letters, then read the answer's tones against the *expected* syllables, wherever the answer put its spaces. This makes `fan gan` and `fangan` equal regardless of how each was segmented. Two tones on one expected syllable count as a tone error (`xi1an1` for 先).
 - **Leniency**
   - Expected neutral tone: any tone accepted (covers `xuésheng` / `xuéshēng`).
   - 一 and 不: both the dictionary tone and the sandhi tone accepted, when characters and syllables line up.
@@ -415,7 +417,7 @@ Append to this section; do not delete entries. Correct a statement elsewhere in 
 4. Commit after each working step and keep 19.3 current, so that "continue" is always enough to resume.
 5. If a block happens again: look at the last lines of the newest transcript to see which file was being written, add the finding here, and write that file in a different form (smaller pieces, data computed at run time, ASCII escapes instead of literal characters).
 
-**Status.** Rules adopted on 2026-11-11 (evening). Whether they fully remove the problem is recorded in 19.3 as the files get written.
+**Status.** Rules adopted on 2026-11-11 (evening). **They worked:** `src/lib/pinyin.ts` and `src/lib/hanzi.ts`, the two files that had been blocked seven times, were written on the first attempt in the new form and their tests pass. The exact trigger was never isolated (that would cost a blocked turn per experiment), so keep following the rules for any later file with language data: the sample lesson, prompts, test fixtures.
 
 ### 19.2 Gemini API notes (documentation re-read on 2026-11-11, evening)
 
@@ -447,4 +449,13 @@ Google's documentation has moved from `ai.google.dev` to `aistudio.google.com/do
 - `materiali/` holds the 15 course files and is ignored by git (checked with `git check-ignore`). There is no `.env.local`, so the real-model check of phase 3 stays open until a key is provided.
 - Gemini documentation re-read (19.2).
 - Blocker diagnosed from the transcripts and documented (19.1).
-- Next: phase 1, written under the rules of 19.1.
+- First commit made (`36d1c97`): scaffold, plan, pinyin engine. Not pushed.
+- Phase 1 in progress. Written and tested so far (32 unit tests passing, `tsc` clean):
+  - `src/lib/pinyin.ts`: grader, tone-number conversion, tone buttons helper (`applyTone`), `normalizePinyin`, `syllablesOf`, `isPinyin`.
+  - `src/lib/hanzi.ts`: radical look-alike normalisation, character helpers, answer comparison for Chinese and Italian.
+- Measured on the real PDFs (text layer only, by script, nothing copied): 42 distinct radical look-alike code points occur. 36 are Kangxi radicals fixed by NFKC; 6 are from the supplement block (the look-alikes of 见 车 长 飞 马 鱼) and are in the explicit list together with 18 other common ones. Each lesson PDF has 2–8 pages with no text at all, which confirms that page images must be sent for extraction.
+- pdf.js 6 note: the document object has no `destroy()`; call `destroy()` on the loading task returned by `getDocument()`.
+- **Phase 1 finished.** Also written: `src/lib/srs.ts` (scheduler), `src/lib/schema.ts` (strict schemas for stored records and backup files, lenient ones for model output that cut strings and lists to size), `src/lib/db.ts` (IndexedDB: snapshot, save/delete lesson, delete item, cards, restore), `src/lib/settings.ts` (key and preferences in local storage, tolerant of a browser without storage), `eslint.config.js` (type-checked rules + React hooks rules).
+  - Ran and saw passing: 70 unit tests in 6 files (`npm test`), `npm run typecheck`, `npm run lint`, `npm run build`.
+  - Decisions taken while writing: ids come from `crypto.getRandomValues`, not `randomUUID`, so the app also works over plain http on the local network; model names are restricted to plain names because they go into a URL path; an API key is accepted only if it is 20–200 printable ASCII characters.
+  - Not done in phase 1 because they need a browser: the dev-server middleware and service-worker checks left open in section 16. They are part of phase 2 and phase 6.

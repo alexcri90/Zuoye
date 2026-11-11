@@ -334,9 +334,9 @@ export function applyTone(text: string, tone: number): string | null {
   }
   if (first < 0) return null;
 
-  const head = tail.slice(0, at[first]!);
+  const head = tail.slice(0, at[first]);
   let syllable = '';
-  for (const ch of tail.slice(at[first]!)) {
+  for (const ch of tail.slice(at[first])) {
     if (ch === BREVE || TONE_MARKS.includes(ch)) continue;
     syllable += ch === 'v' ? `u${DIAERESIS}` : ch === 'V' ? `U${DIAERESIS}` : ch;
   }
