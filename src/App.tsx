@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { TabBar } from './components/ui.tsx';
 import { Home } from './features/home/Home.tsx';
+import { AddLesson } from './features/lessons/AddLesson.tsx';
+import { LessonDetail } from './features/lessons/LessonDetail.tsx';
 import { Lessons } from './features/lessons/Lessons.tsx';
 import { Practice } from './features/practice/Practice.tsx';
 import { Settings } from './features/settings/Settings.tsx';
@@ -78,7 +80,9 @@ export function App() {
         ) : (
           <>
             {route.name === 'home' && <Home />}
-            {(route.name === 'lessons' || route.name === 'lesson' || route.name === 'lesson-new') && <Lessons />}
+            {route.name === 'lessons' && <Lessons />}
+            {route.name === 'lesson-new' && <AddLesson />}
+            {route.name === 'lesson' && <LessonDetail key={route.id} id={route.id} />}
             {route.name === 'settings' && <Settings />}
             <TabBar current={route.name === 'home' || route.name === 'settings' ? route.name : 'lessons'} />
           </>

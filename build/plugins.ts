@@ -61,6 +61,7 @@ const mounts: Mount[] = [
   },
   passthrough('pdfjs/cmaps', nm('pdfjs-dist', 'cmaps'), () => 'application/octet-stream'),
   passthrough('pdfjs/standard_fonts', nm('pdfjs-dist', 'standard_fonts'), () => 'application/octet-stream'),
+  passthrough('pdfjs/iccs', nm('pdfjs-dist', 'iccs'), () => 'application/octet-stream'),
   passthrough('pdfjs/wasm', nm('pdfjs-dist', 'wasm'), (n) =>
     n.endsWith('.wasm') ? 'application/wasm' : n.endsWith('.js') || n.endsWith('.mjs') ? 'text/javascript' : 'application/octet-stream',
   ),

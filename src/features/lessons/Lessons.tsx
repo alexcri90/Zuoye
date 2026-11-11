@@ -23,6 +23,10 @@ export function Lessons() {
     <main className="page">
       <PageHead title="Lezioni" />
 
+      <a className="btn btn-primary btn-block" href="#/lessons/new">
+        Aggiungi una lezione
+      </a>
+
       {data.lessons.length === 0 ? (
         <div className="notice stack">
           <p>Qui compaiono le lezioni del corso, con le parole e le frasi estratte dai materiali.</p>

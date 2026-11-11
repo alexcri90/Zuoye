@@ -82,6 +82,27 @@ export function maskKey(key: string): string {
   return key.length < 8 ? '' : `•••• ${key.slice(-4)}`;
 }
 
+const USAGE_ITEM = 'zuoye.usage';
+
+const dayOf = (time: number): string => {
+  const d = new Date(time);
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+};
+
+/** Requests sent to the model today (the free tier has a small daily budget). */
+export function requestsToday(now: number, store: Store | null = defaultStore()): number {
+  try {
+    const usage = JSON.parse(read(USAGE_ITEM, store) ?? '{}') as { day?: unknown; count?: unknown };
+    return usage.day === dayOf(now) && typeof usage.count === 'number' ? usage.count : 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function countRequest(now: number, store: Store | null = defaultStore()): void {
+  write(USAGE_ITEM, JSON.stringify({ day: dayOf(now), count: requestsToday(now, store) + 1 }), store);
+}
+
 export function loadPrefs(store: Store | null = defaultStore()): Prefs {
   let raw: unknown = {};
   try {
