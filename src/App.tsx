@@ -8,6 +8,8 @@ import { Practice } from './features/practice/Practice.tsx';
 import { Settings } from './features/settings/Settings.tsx';
 import { openDatabase, type Database, type Snapshot } from './lib/db.ts';
 import { askToPersist } from './lib/files.ts';
+import { hanChars } from './lib/hanzi.ts';
+import { warmStrokes } from './lib/strokes.ts';
 import { loadPrefs, savePrefs } from './lib/settings.ts';
 import { useRoute } from './router.ts';
 import { StoreContext, type Store } from './store.ts';
@@ -47,6 +49,14 @@ export function App() {
   useEffect(() => {
     if (hasLessons) void askToPersist();
   }, [hasLessons]);
+
+  // While online, fetch the strokes of every lesson character, so writing also works offline later.
+  const vocab = data?.vocab;
+  useEffect(() => {
+    if (!vocab || vocab.length === 0 || !navigator.onLine) return;
+    const timer = window.setTimeout(() => void warmStrokes(vocab.flatMap((v) => hanChars(v.hanzi))), 1500);
+    return () => window.clearTimeout(timer);
+  }, [vocab]);
 
   const store = useMemo<Store | null>(() => {
     if (!db || !data) return null;

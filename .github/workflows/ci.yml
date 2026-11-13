@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Nothing here needs to write to the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Type-check, lint, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # Actions are pinned by commit, not by tag, so a moved tag cannot change what runs.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+  browser:
+    name: Browser checks on the built app
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Not yet proven on a hosted runner (written and run on Windows with Edge):
+    # until it has passed here once, a failure does not fail the workflow.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      # Uses the Chrome that the runner image already has; the model endpoint is mocked.
+      - run: npm run e2e
+        env:
+          E2E_BROWSER: chrome

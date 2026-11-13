@@ -7,7 +7,8 @@ import { chromium } from 'playwright-core';
 export const root = path.resolve(import.meta.dirname, '..');
 export const out = path.join(root, 'e2e-out');
 const dist = path.join(root, 'dist');
-const PREFIX = '/sotto/cartella/';
+// A sub-path by default, to prove the build does not assume the domain root; E2E_PREFIX=/ checks the root.
+const PREFIX = process.env.E2E_PREFIX ?? '/sotto/cartella/';
 
 const TYPES = {
   '.html': 'text/html; charset=utf-8',

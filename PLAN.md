@@ -509,3 +509,19 @@ Google's documentation has moved from `ai.google.dev` to `aistudio.google.com/do
   - Restoring a backup **replaces** everything on the device after a confirmation. There is no merge.
   - Storage persistence is requested as soon as one lesson exists, and can be requested by hand in Settings. In the headless test browser the request is refused ("non protetto"), which is normal there; whether the phone grants it is unknown until the app is installed on it.
   - **Open: the real-model check.** No Gemini request has ever been made (no `.env.local`, no key). Unverified until then: whether `responseJsonSchema` is honoured (the client falls back to no schema on a 400), the real error bodies, whether the browser may call the API directly (CORS), the quality of the extraction prompt on the real lessons, and how many requests the free tier allows per day. To close it: put `GEMINI_API_KEY=...` in a git-ignored `.env.local`, or type the key into Settings on the running app and import a lesson.
+- **Phase 6 in progress** (ship). Done without needing the hosting decision:
+  - Icons: `scripts/make-icons.mjs` draws the seal from the stroke data the app already ships and writes `public/icon.svg`, `icon-180.png`, `icon-192.png`, `icon-512.png`. The icon no longer depends on the device's fonts. Re-run the script to change it.
+  - Offline: the app now fetches, in the background while online, the stroke data of every character in the stored lessons, so writing works in airplane mode on characters never opened before (before this, strokes were cached only on first use). The service worker precaches the icons and the manifest.
+  - Seen working in the browser (emulated phone, network switched off): the app opens with its lessons; pinyin, writing on never-opened characters, fill-in and reorder all work. The build was also run from a domain root (`E2E_PREFIX=/`), not only from a sub-path.
+  - CI: `.github/workflows/ci.yml` runs type-check, lint, unit tests and build on Node 24, with read-only permissions and actions pinned by commit hash (hashes read from the action repositories on 2026-11-13). A second job runs the browser checks with the runner's Chrome; it is marked `continue-on-error` because it has never run on a hosted runner.
+  - `README.md` written.
+  - Ran and saw passing at this point: 178 unit tests, type-check, lint, build, `npm audit` (0 vulnerabilities), four browser scripts (35 + 33 + 30 + 16 = 114 checks). `dist/` is 36 MB in 9,789 files, almost all of it stroke data.
+  - A lesson learned about the test scripts: Playwright's `waitForFunction` does not wait for an `async` predicate; poll with `evaluate` in a loop instead.
+
+### 19.4 Open items (keep this list current)
+
+1. **Hosting choice** (section 15), then the deployment itself. Nothing is deployed and nothing has been pushed; the CI workflow has therefore never run.
+2. **Install on the phone** and repeat the airplane-mode check there. Everything so far was seen in desktop Edge emulating a phone; finger drawing was simulated with a mouse.
+3. **Real-model check** (needs a Gemini key): one real lesson imported and its words compared with the slides; a set of right, nearly right and wrong translations graded; the notes in 19.2 confirmed or corrected (schema field, error bodies, direct browser calls, daily limits).
+4. The browser-check job in CI is unproven on a hosted runner.
+5. Not planned for now, by decision: "find the error", sentence transformation and dialogue completion exercises (section 8).

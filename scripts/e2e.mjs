@@ -9,7 +9,8 @@ import { chromium } from 'playwright-core';
 const root = path.resolve(import.meta.dirname, '..');
 const dist = path.join(root, 'dist');
 const out = path.join(root, 'e2e-out');
-const PREFIX = '/sotto/cartella/'; // proves the build does not assume the domain root
+// A sub-path by default, to prove the build does not assume the domain root; E2E_PREFIX=/ checks the root.
+const PREFIX = process.env.E2E_PREFIX ?? '/sotto/cartella/';
 fs.mkdirSync(out, { recursive: true });
 
 const TYPES = {
@@ -288,6 +289,53 @@ try {
   await context.setOffline(false);
   await context.close();
 
+  // ---------- airplane mode: exercises 1, 2, 5 and reorder on characters never opened before ----------
+  const plane = await newPage();
+  await plane.page.goto(base);
+  await plane.page.evaluate(() => navigator.serviceWorker.ready.then(() => true));
+  await plane.page.reload(); // from here on the service worker controls the page
+  await plane.page.goto(`${base}#/lessons`);
+  await button(plane.page, 'Carica la lezione di esempio').click();
+  await plane.page.waitForSelector('a.row');
+  // The sample lesson has 20 different characters; wait until the background fetch has cached them all.
+  const strokeFilesCached = () =>
+    plane.page.evaluate(async () => (await (await caches.open('zuoye-data-v1')).keys()).filter((r) => r.url.includes('/hanzi/')).length);
+  let cachedCount = 0;
+  for (let waited = 0; waited < 20000 && cachedCount < 20; waited += 250) {
+    await plane.page.waitForTimeout(250);
+    cachedCount = await strokeFilesCached();
+  }
+  check('strokes of every lesson character are cached in the background', cachedCount === 20, `${cachedCount} files`);
+  await plane.context.setOffline(true);
+  await plane.page.reload();
+  await plane.page.waitForSelector('a.row');
+  check('airplane mode: the app opens with its lessons', (await plane.page.locator('a.row').count()) === 1);
+
+  await plane.page.goto(`${base}#/practice/pinyin`);
+  await plane.page.locator('input.pinyin-input').pressSequentially('ni3hao3');
+  await button(plane.page, 'Verifica').click();
+  check('airplane mode: pinyin exercise works', (await plane.page.locator('.feedback.ok').count()) === 1);
+  await button(plane.page, 'Chiudi la sessione').click();
+
+  await plane.page.goto(`${base}#/practice/write`);
+  await writeChar(plane.page, '你');
+  await writeChar(plane.page, '好');
+  await plane.page.waitForSelector('.feedback');
+  check('airplane mode: writing works on characters never opened before', (await plane.page.locator('.feedback-title').innerText()) === 'Ben scritto');
+  await shot(plane.page, '22-airplane-writing');
+  await button(plane.page, 'Chiudi la sessione').click();
+
+  await plane.page.goto(`${base}#/practice/cloze`);
+  await plane.page.locator('.option').first().click();
+  check('airplane mode: fill-in works', (await plane.page.locator('.feedback').count()) === 1);
+  await button(plane.page, 'Chiudi la sessione').click();
+
+  await plane.page.goto(`${base}#/practice/order`);
+  await button(plane.page, 'Non lo so').click();
+  check('airplane mode: reorder works', (await plane.page.locator('.feedback').count()) === 1);
+  await plane.context.setOffline(false);
+  await plane.context.close();
+
   // ---------- dark mode ----------
   const dark = await newPage({ colorScheme: 'dark' });
   await dark.page.goto(`${base}#/lessons`);
@@ -316,6 +364,7 @@ try {
 } catch (error) {
   check('run completed', false, String(error).split('\n')[0]);
   if (problems.length > 0) console.log('console:', problems.slice(0, 8).join('\n'));
+  for (const failure of new Set(failures)) console.log(`failed request: ${failure}`);
 } finally {
   await browser.close();
   server.close();
