@@ -52,6 +52,10 @@ export function App() {
         await db.putCard(card);
         setData((prev) => prev && { ...prev, cards: [...prev.cards.filter((c) => c.key !== card.key), card] });
       },
+      saveSentence: async (sentence) => {
+        await db.putSentence(sentence);
+        setData((prev) => prev && { ...prev, sentences: prev.sentences.map((s) => (s.id === sentence.id ? sentence : s)) });
+      },
       setPrefs: (patch) => setPrefs(savePrefs(patch)),
     };
   }, [db, data, prefs]);

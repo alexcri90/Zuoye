@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { PageHead } from '../../components/ui.tsx';
+import { resumeModel } from '../../lib/grading.ts';
 import { currentProvider } from '../../lib/llm/index.ts';
 import { LlmError } from '../../lib/llm/provider.ts';
 import {
@@ -36,6 +37,7 @@ export function Settings() {
     setStored(getApiKey());
     setTyped('');
     setCheck({ state: 'idle' });
+    resumeModel(); // a new key deserves a new try
   };
 
   const verify = async () => {

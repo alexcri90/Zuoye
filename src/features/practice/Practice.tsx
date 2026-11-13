@@ -3,8 +3,11 @@ import { buildQueue, type Exercise, type Mode } from '../../lib/practice.ts';
 import { newCard, review, type Rating } from '../../lib/srs.ts';
 import { navigate } from '../../router.ts';
 import { useStore } from '../../store.ts';
+import { ClozeExercise } from './ClozeExercise.tsx';
+import { OrderExercise } from './OrderExercise.tsx';
 import { PinyinExercise } from './PinyinExercise.tsx';
 import { ENABLED_SKILLS } from './skills.ts';
+import { TranslateExercise } from './TranslateExercise.tsx';
 import { WriteExercise } from './WriteExercise.tsx';
 
 /** How many times a missed item comes back within the same session. */
@@ -18,8 +21,13 @@ function ExerciseView({ exercise, onDone }: { exercise: Exercise; onDone: (ratin
       return <PinyinExercise vocab={exercise.vocab} onDone={onDone} />;
     case 'write':
       return <WriteExercise vocab={exercise.vocab} onDone={onDone} />;
-    default:
-      return null;
+    case 'it-zh':
+    case 'zh-it':
+      return <TranslateExercise sentence={exercise.sentence} direction={exercise.skill} onDone={onDone} />;
+    case 'cloze':
+      return <ClozeExercise cloze={exercise.cloze} onDone={onDone} />;
+    case 'order':
+      return <OrderExercise sentence={exercise.sentence} onDone={onDone} />;
   }
 }
 

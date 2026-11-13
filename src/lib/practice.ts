@@ -42,6 +42,17 @@ function shuffle<T>(items: readonly T[], random: Random): T[] {
   return out;
 }
 
+/** The words of a sentence as tiles in a mixed-up order (never the right one, when that is possible). */
+export function scramble(words: readonly string[], random: Random = Math.random): Array<{ id: number; word: string }> {
+  const tiles = words.map((word, id) => ({ id, word }));
+  const solved = words.join('');
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const mixed = shuffle(tiles, random);
+    if (mixed.map((t) => t.word).join('') !== solved) return mixed;
+  }
+  return tiles.length > 1 ? [...tiles.slice(1), tiles[0]!] : tiles;
+}
+
 const MAX_WRITE_CHARS = 6;
 const MIN_ORDER_WORDS = 3;
 const MAX_ORDER_WORDS = 12;

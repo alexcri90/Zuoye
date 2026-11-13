@@ -9,6 +9,7 @@ import {
   exercisesFor,
   rateWriting,
   ratePinyin,
+  scramble,
   wordsMatch,
   type QueueOptions,
 } from './practice.ts';
@@ -147,6 +148,26 @@ describe('deriveCloze', () => {
     expect(deriveCloze(sentence, sample.vocab.slice(3, 5), () => 0, seeded())).toBeNull();
     expect(deriveCloze({ ...sentence, words: ['我', '是'] }, sample.vocab, () => 0, seeded())).toBeNull();
     expect(deriveCloze({ ...sentence, words: ['我', '是', '老师'] }, sample.vocab, () => 0, seeded())).toBeNull();
+  });
+});
+
+describe('scramble', () => {
+  it('returns every word once, never in the right order', () => {
+    for (const s of sample.sentences) {
+      for (const seed of [1, 2, 3, 4, 5, 6, 7, 8]) {
+        const tiles = scramble(s.words, seeded(seed));
+        expect(tiles.map((t) => t.id).sort()).toEqual(s.words.map((_, i) => i));
+        expect(tiles.every((t) => t.word === s.words[t.id])).toBe(true);
+        expect(tiles.map((t) => t.word).join('')).not.toBe(s.words.join(''));
+      }
+    }
+  });
+
+  it('copes with a random source that never mixes, and with repeated words', () => {
+    // A stuck random source: the fallback still moves the first word to the end.
+    expect(scramble(['我', '是', '学生'], () => 0.999).map((t) => t.word)).not.toEqual(['我', '是', '学生']);
+    expect(scramble(['好', '好', '好'], seeded()).map((t) => t.word)).toEqual(['好', '好', '好']);
+    expect(scramble([], seeded())).toEqual([]);
   });
 });
 

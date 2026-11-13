@@ -251,7 +251,10 @@ try {
   await page.goto(`${base}#/practice/mista`);
   await page.waitForSelector('.exercise');
   for (let guard = 0; guard < 40 && (await page.locator('.summary').count()) === 0; guard++) {
-    if ((await page.locator('input.pinyin-input').count()) > 0) {
+    if ((await page.locator('.options').count()) > 0) {
+      await page.locator('.option').first().click();
+      await button(page, 'Avanti').click();
+    } else if ((await page.locator('input.pinyin-input, textarea, .tiles').count()) > 0) {
       await button(page, 'Non lo so').click();
       await button(page, 'Avanti').click();
     } else {

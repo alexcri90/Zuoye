@@ -17,4 +17,4 @@ export const SKILL_INFO: Record<Skill, SkillInfo> = {
 };
 
 /** Exercise types that are implemented, in the order shown on the home screen. */
-export const ENABLED_SKILLS: readonly Skill[] = ['pinyin', 'write'];
+export const ENABLED_SKILLS: readonly Skill[] = ['pinyin', 'write', 'cloze', 'order', 'it-zh', 'zh-it'];
