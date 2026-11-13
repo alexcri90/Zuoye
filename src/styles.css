@@ -1053,23 +1053,31 @@ select.input {
   background-repeat: no-repeat;
 }
 
-/* Under the page header: a gold line and a band of the classic fret pattern (回纹). */
+/*
+ * One decoration only: a very faint brush stroke. It is a shape used as a
+ * mask, so it takes its colour from the theme and stretches to any width.
+ */
+:root[data-theme='nuovo'] {
+  --brush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 14' preserveAspectRatio='none'%3E%3Cpath d='M3 8C30 3 70 5 110 4.5S190 3 240 5.5 285 5 297 7.5C280 9.5 250 9 205 10S120 11.5 70 10.5 15 11 3 8Z'/%3E%3Cpath d='M38 12.6C90 12 150 13 222 12.2' fill='none' stroke='%23000' stroke-width='.7'/%3E%3C/svg%3E");
+}
+
+/* Under the page header, in ink. */
 [data-theme='nuovo'] .page-head {
   position: relative;
-  padding-bottom: 22px;
-  border-bottom: 1px solid color-mix(in srgb, var(--gold) 70%, transparent);
+  padding-bottom: 16px;
 }
 
 [data-theme='nuovo'] .page-head::after {
   content: '';
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 5px;
-  height: 8px;
-  opacity: 0.55;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8'%3E%3Cpath d='M0 7.5H13.5V.5H2.5V5.5H10.5V3' fill='none' stroke='%23b3915c' stroke-width='1'/%3E%3C/svg%3E")
-    repeat-x left center;
+  left: -4px;
+  right: 12%;
+  bottom: 0;
+  height: 10px;
+  background: var(--ink);
+  opacity: 0.09;
+  -webkit-mask: var(--brush) center / 100% 100% no-repeat;
+  mask: var(--brush) center / 100% 100% no-repeat;
 }
 
 [data-theme='nuovo'] .page-title {
@@ -1082,15 +1090,33 @@ select.input {
   }
 }
 
-/* Section headings start with a small vermilion lozenge, as on a lattice window. */
-[data-theme='nuovo'] .section-title::before {
+/* Section headings keep their plain style, with the same stroke under them, in vermilion. */
+[data-theme='nuovo'] .section-title {
+  position: relative;
+  width: fit-content;
+}
+
+[data-theme='nuovo'] .section-title::after {
   content: '';
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin: 0 9px 1px 1px;
+  position: absolute;
+  left: -6px;
+  right: -12px;
+  bottom: -7px;
+  height: 7px;
   background: var(--vermilion);
-  transform: rotate(45deg);
+  opacity: 0.16;
+  -webkit-mask: var(--brush) center / 100% 100% no-repeat;
+  mask: var(--brush) center / 100% 100% no-repeat;
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme='nuovo'] .page-head::after {
+    opacity: 0.16;
+  }
+
+  [data-theme='nuovo'] .section-title::after {
+    opacity: 0.26;
+  }
 }
 
 [data-theme='nuovo'] .seal {
