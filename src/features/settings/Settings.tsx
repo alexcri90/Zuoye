@@ -15,6 +15,7 @@ import {
   requestsToday,
   setApiKey,
   type StrokeLevel,
+  type Theme,
 } from '../../lib/settings.ts';
 import { useStore } from '../../store.ts';
 import { ImportButton } from '../data/ImportButton.tsx';
@@ -24,6 +25,10 @@ const STROKE_OPTIONS: Array<[StrokeLevel, string]> = [
   ['precisa', 'Precisa'],
   ['normale', 'Normale'],
   ['tollerante', 'Tollerante'],
+];
+const THEME_OPTIONS: Array<[Theme, string]> = [
+  ['nuovo', 'Nuovo'],
+  ['essenziale', 'Essenziale'],
 ];
 /** Free-tier text models on 2026-11-11; "Verifica chiave" replaces this with what the key can really use. */
 const KNOWN_MODELS = [DEFAULT_MODEL, 'gemini-3.6-flash', DEFAULT_FALLBACK_MODEL, 'gemini-3.1-flash-lite'];
@@ -201,6 +206,19 @@ export function Settings() {
               aria-pressed={prefs.strokes === level}
               onClick={() => setPrefs({ strokes: level })}
             >
+              {label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <hr className="rule" />
+
+      <section className="stack">
+        <h2 className="section-title">Aspetto</h2>
+        <div className="chips">
+          {THEME_OPTIONS.map(([theme, label]) => (
+            <button key={theme} type="button" className="chip" aria-pressed={prefs.theme === theme} onClick={() => setPrefs({ theme })}>
               {label}
             </button>
           ))}

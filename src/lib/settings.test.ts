@@ -80,6 +80,7 @@ describe('preferences', () => {
   it('have defaults', () => {
     expect(loadPrefs(memoryStore())).toEqual({
       strokes: 'normale',
+      theme: 'nuovo',
       model: DEFAULT_MODEL,
       fallbackModel: DEFAULT_FALLBACK_MODEL,
       sessionSize: 10,
@@ -98,9 +99,10 @@ describe('preferences', () => {
     const store = memoryStore();
     store.setItem('zuoye.prefs', '{not json');
     expect(loadPrefs(store).sessionSize).toBe(10);
-    store.setItem('zuoye.prefs', JSON.stringify({ model: '../../evil?x=', sessionSize: 9999, lessons: 'tutte', strokes: 'qualsiasi' }));
+    store.setItem('zuoye.prefs', JSON.stringify({ model: '../../evil?x=', sessionSize: 9999, lessons: 'tutte', strokes: 'qualsiasi', theme: 7 }));
     expect(loadPrefs(store)).toEqual({
       strokes: 'normale',
+      theme: 'nuovo',
       model: DEFAULT_MODEL,
       fallbackModel: DEFAULT_FALLBACK_MODEL,
       sessionSize: 10,
@@ -108,10 +110,10 @@ describe('preferences', () => {
     });
   });
 
-  it('remember the stroke tolerance', () => {
+  it('remember the stroke tolerance and the look', () => {
     const store = memoryStore();
-    savePrefs({ strokes: 'tollerante' }, store);
-    expect(loadPrefs(store)).toMatchObject({ strokes: 'tollerante' });
+    savePrefs({ strokes: 'tollerante', theme: 'essenziale' }, store);
+    expect(loadPrefs(store)).toMatchObject({ strokes: 'tollerante', theme: 'essenziale' });
   });
 
   it('accept only plain model names', () => {

@@ -248,11 +248,16 @@ try {
   await page.waitForSelector('.chips');
   check('settings survive a reload', (await button(page, '5').getAttribute('aria-pressed')) === 'true');
 
-  // The stroke tolerance is a setting too.
+  // The look and the stroke tolerance are settings too.
+  const theme = () => page.evaluate(() => document.documentElement.dataset.theme);
+  check('the new look is the default', (await theme()) === 'nuovo');
+  await button(page, 'Essenziale').click();
+  check('one tap goes back to the original look', (await theme()) === 'essenziale');
   await button(page, 'Tollerante').click();
   await page.reload();
   await page.waitForSelector('.chips');
-  check('stroke tolerance survives a reload', (await button(page, 'Tollerante').getAttribute('aria-pressed')) === 'true');
+  check('look and stroke tolerance survive a reload', (await theme()) === 'essenziale' && (await button(page, 'Tollerante').getAttribute('aria-pressed')) === 'true');
+  await button(page, 'Nuovo').click();
   await button(page, 'Normale').click();
   check('the default stroke tolerance is the middle one', (await button(page, 'Normale').getAttribute('aria-pressed')) === 'true');
 
@@ -358,6 +363,31 @@ try {
   for (const p of paths.slice(0, 4)) await drawPath(dark.page, p);
   await shot(dark.page, '21-dark-writing');
   await dark.context.close();
+
+  // ---------- the two looks, side by side, for the eye ----------
+  for (const [look, scheme] of [['nuovo', 'light'], ['essenziale', 'light'], ['nuovo', 'dark']]) {
+    const view = await newPage({ colorScheme: scheme });
+    await view.context.addInitScript((value) => window.localStorage.setItem('zuoye.prefs', JSON.stringify({ theme: value })), look);
+    await view.page.goto(`${base}#/lessons`);
+    await button(view.page, 'Carica la lezione di esempio').click();
+    await view.page.waitForSelector('a.row');
+    const name = (screen) => `look-${look}${scheme === 'dark' ? '-dark' : ''}-${screen}`;
+    await view.page.goto(`${base}#/`);
+    await view.page.waitForSelector('button.row');
+    await shot(view.page, name('home'));
+    await view.page.goto(`${base}#/settings`);
+    await view.page.waitForSelector('.chips');
+    await shot(view.page, name('settings'));
+    await view.page.goto(`${base}#/practice/write`);
+    await view.page.waitForSelector('.tian[data-status="ready"]');
+    for (const p of (await strokePaths(view.page, '你')).slice(0, 4)) await drawPath(view.page, p);
+    await shot(view.page, name('writing'));
+    await view.page.goto(`${base}#/practice/pinyin`);
+    await view.page.locator('input.pinyin-input').pressSequentially('ni3hao4');
+    await button(view.page, 'Verifica').click();
+    await shot(view.page, name('pinyin'));
+    await view.context.close();
+  }
 
   // ---------- nothing left the app's origin; no errors ----------
   const outside = [...new Set(requests.filter((u) => !u.startsWith(base) && !u.startsWith('data:') && !u.startsWith('blob:')))];

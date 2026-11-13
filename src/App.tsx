@@ -44,6 +44,11 @@ export function App() {
     };
   }, []);
 
+  // The look chosen in Settings applies to the whole page.
+  useEffect(() => {
+    document.documentElement.dataset.theme = prefs.theme;
+  }, [prefs.theme]);
+
   // Once there is something worth keeping, ask the browser not to evict it.
   const hasLessons = (data?.lessons.length ?? 0) > 0;
   useEffect(() => {

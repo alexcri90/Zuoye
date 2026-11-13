@@ -1005,6 +1005,161 @@ select.input {
   font-size: 16px;
 }
 
+/* =====================================================================
+   The "nuovo" look (新中式): the same layout with a little more colour.
+   Indigo for the main actions, a muted gold for fine lines, a faint ink
+   wash behind the page and a fret band under the header. Everything is
+   scoped to data-theme='nuovo'; the original look is untouched above.
+   ===================================================================== */
+
+:root[data-theme='nuovo'] {
+  --paper: #f6f1e6;
+  --paper-raised: #fffcf5;
+  --ink: #1d1b19;
+  --ink-soft: #6a6459;
+  --hairline: #e5dcc9;
+  --vermilion: #c23b2e;
+  --vermilion-soft: #f5e1dc;
+  --jade: #3c7a68;
+  --jade-soft: #dfece6;
+  --primary: #2c4166; /* indigo, as in blue-and-white porcelain */
+  --on-primary: #fbf7ee;
+  --gold: #b3915c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme='nuovo'] {
+    --paper: #13151a;
+    --paper-raised: #1c1f27;
+    --ink: #ece6d9;
+    --ink-soft: #a29b8d;
+    --hairline: #2e323c;
+    --vermilion: #e2594c;
+    --vermilion-soft: #3b211e;
+    --jade: #76b9a4;
+    --jade-soft: #1c2f2a;
+    --primary: #d8c49a;
+    --on-primary: #17181c;
+    --gold: #9a7d4e;
+  }
+}
+
+/* A faint wash of indigo and vermilion in the top corners, like diluted ink. */
+[data-theme='nuovo'] body {
+  background:
+    radial-gradient(90% 420px at 100% 0%, color-mix(in srgb, var(--primary) 7%, transparent), transparent 70%),
+    radial-gradient(80% 360px at 0% 0%, color-mix(in srgb, var(--vermilion) 8%, transparent), transparent 65%),
+    var(--paper);
+  background-repeat: no-repeat;
+}
+
+/* Under the page header: a gold line and a band of the classic fret pattern (回纹). */
+[data-theme='nuovo'] .page-head {
+  position: relative;
+  padding-bottom: 22px;
+  border-bottom: 1px solid color-mix(in srgb, var(--gold) 70%, transparent);
+}
+
+[data-theme='nuovo'] .page-head::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 5px;
+  height: 8px;
+  opacity: 0.55;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='8'%3E%3Cpath d='M0 7.5H13.5V.5H2.5V5.5H10.5V3' fill='none' stroke='%23b3915c' stroke-width='1'/%3E%3C/svg%3E")
+    repeat-x left center;
+}
+
+[data-theme='nuovo'] .page-title {
+  color: var(--primary);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme='nuovo'] .page-title {
+    color: var(--ink);
+  }
+}
+
+/* Section headings start with a small vermilion lozenge, as on a lattice window. */
+[data-theme='nuovo'] .section-title::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin: 0 9px 1px 1px;
+  background: var(--vermilion);
+  transform: rotate(45deg);
+}
+
+[data-theme='nuovo'] .seal {
+  box-shadow:
+    inset 0 0 0 2px rgb(255 255 255 / 0.24),
+    0 0 0 1.5px var(--paper),
+    0 0 0 2.5px var(--gold);
+}
+
+/* Exercise icons sit on a small tinted tile. */
+[data-theme='nuovo'] .row-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--vermilion-soft);
+  font-size: 25px;
+}
+
+[data-theme='nuovo'] .row-count strong {
+  color: var(--primary);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme='nuovo'] .row-count strong {
+    color: var(--ink);
+  }
+}
+
+[data-theme='nuovo'] .btn-primary {
+  box-shadow: 0 6px 16px -10px color-mix(in srgb, var(--primary) 80%, transparent);
+}
+
+[data-theme='nuovo'] .notice {
+  border-color: color-mix(in srgb, var(--gold) 45%, var(--hairline));
+}
+
+[data-theme='nuovo'] .notice.bad {
+  border-color: var(--vermilion);
+}
+
+[data-theme='nuovo'] .tabbar {
+  border-top-color: color-mix(in srgb, var(--gold) 55%, var(--hairline));
+}
+
+[data-theme='nuovo'] .tab[aria-current='page'] {
+  box-shadow: inset 0 2px 0 var(--vermilion);
+}
+
+[data-theme='nuovo'] .progress > span {
+  background: linear-gradient(90deg, var(--vermilion), var(--gold));
+}
+
+/* The writing grid gets gold corners inside its vermilion frame. */
+[data-theme='nuovo'] .tian {
+  box-shadow: 0 0 0 4px var(--paper), 0 0 0 5px color-mix(in srgb, var(--gold) 70%, transparent);
+}
+
+[data-theme='nuovo'] .summary-figure {
+  color: var(--primary);
+}
+
+@media (prefers-color-scheme: dark) {
+  [data-theme='nuovo'] .summary-figure {
+    color: var(--ink);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

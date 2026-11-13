@@ -21,8 +21,13 @@ const modelName = (fallback: string) => z.string().regex(MODEL_NAME).catch(fallb
 export const STROKE_LEVELS = ['precisa', 'normale', 'tollerante'] as const;
 export type StrokeLevel = (typeof STROKE_LEVELS)[number];
 
+/** The two looks of the app; 'essenziale' is the original one. */
+export const THEMES = ['essenziale', 'nuovo'] as const;
+export type Theme = (typeof THEMES)[number];
+
 const PrefsSchema = z.object({
   strokes: z.enum(STROKE_LEVELS).catch('normale'),
+  theme: z.enum(THEMES).catch('nuovo'),
   model: modelName(DEFAULT_MODEL),
   fallbackModel: modelName(DEFAULT_FALLBACK_MODEL),
   /** Items per practice session. */
