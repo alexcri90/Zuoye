@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PageHead } from '../../components/ui.tsx';
+import { exportFileName, makeBackup } from '../../lib/backup.ts';
+import { askToPersist, downloadJson, persistence, usedMegabytes, type Persistence } from '../../lib/files.ts';
 import { resumeModel } from '../../lib/grading.ts';
+import { count } from '../../lib/italian.ts';
 import { currentProvider } from '../../lib/llm/index.ts';
 import { LlmError } from '../../lib/llm/provider.ts';
 import {
@@ -13,6 +16,7 @@ import {
   setApiKey,
 } from '../../lib/settings.ts';
 import { useStore } from '../../store.ts';
+import { ImportButton } from '../data/ImportButton.tsx';
 
 const SESSION_SIZES = [5, 10, 15, 20, 30];
 /** Free-tier text models on 2026-11-11; "Verifica chiave" replaces this with what the key can really use. */
@@ -27,6 +31,17 @@ export function Settings() {
   const [keyError, setKeyError] = useState(false);
   const [check, setCheck] = useState<Check>({ state: 'idle' });
   const [used] = useState(() => requestsToday(Date.now()));
+  const [kept, setKept] = useState<Persistence | null>(null);
+  const [space, setSpace] = useState<number | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    void persistence().then((p) => alive && setKept(p));
+    void usedMegabytes().then((mb) => alive && setSpace(mb));
+    return () => {
+      alive = false;
+    };
+  }, [data]);
 
   const models = [...new Set([...(check.state === 'ok' ? check.models : KNOWN_MODELS), prefs.model, prefs.fallbackModel])];
 
@@ -169,10 +184,53 @@ export function Settings() {
       <section className="stack">
         <h2 className="section-title">Dati su questo dispositivo</h2>
         <p className="small">
-          {data.lessons.length} lezioni · {data.vocab.length} parole · {data.sentences.length} frasi · {data.cards.length}{' '}
-          schede di ripasso
+          {count(data.lessons.length, 'lezione', 'lezioni')} · {count(data.vocab.length, 'parola', 'parole')} ·{' '}
+          {count(data.sentences.length, 'frase', 'frasi')} · {count(data.cards.length, 'scheda di ripasso', 'schede di ripasso')}
+          {space !== null && ` · ${space} MB`}
         </p>
-        <p className="muted small">Lezioni e progressi restano in questo browser: non vengono inviati a nessun server.</p>
+        <p className="muted small">
+          Lezioni e progressi restano in questo browser: non vengono inviati a nessun server. Per portarli su un altro
+          dispositivo, o per metterli al sicuro, esporta un backup e importalo dall&apos;altra parte.
+        </p>
+        <button
+          type="button"
+          className="btn btn-block"
+          disabled={data.lessons.length === 0}
+          onClick={() => downloadJson(exportFileName('backup', Date.now()), makeBackup(data, Date.now()))}
+        >
+          Esporta un backup
+        </button>
+        <ImportButton label="Importa un backup o una lezione" />
+        <p className="small">
+          Archivio: <strong>{kept ?? '…'}</strong>
+          {kept === 'non protetto' && (
+            <>
+              {' '}
+              <button type="button" className="link" onClick={() => void askToPersist().then(setKept)}>
+                Chiedi al browser di proteggerlo
+              </button>
+            </>
+          )}
+        </p>
+        {kept === 'non protetto' && (
+          <p className="muted small">
+            Se lo spazio scarseggia il browser può cancellare i dati di un sito. Installare l&apos;app sulla schermata Home di
+            solito basta a proteggerli; un backup ogni tanto è comunque una buona idea.
+          </p>
+        )}
+      </section>
+
+      <hr className="rule" />
+
+      <section className="stack">
+        <h2 className="section-title">Licenze</h2>
+        <p className="muted small">
+          I tratti dei caratteri vengono da Hanzi Writer e dai dati di Make Me a Hanzi, distribuiti con la Arphic Public
+          License. I PDF sono letti con pdf.js (Apache 2.0).{' '}
+          <a href="./hanzi/ARPHICPL.TXT" target="_blank" rel="noopener noreferrer">
+            Testo della licenza Arphic
+          </a>
+        </p>
       </section>
     </main>
   );

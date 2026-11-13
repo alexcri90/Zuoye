@@ -7,6 +7,7 @@ import { Lessons } from './features/lessons/Lessons.tsx';
 import { Practice } from './features/practice/Practice.tsx';
 import { Settings } from './features/settings/Settings.tsx';
 import { openDatabase, type Database, type Snapshot } from './lib/db.ts';
+import { askToPersist } from './lib/files.ts';
 import { loadPrefs, savePrefs } from './lib/settings.ts';
 import { useRoute } from './router.ts';
 import { StoreContext, type Store } from './store.ts';
@@ -40,6 +41,12 @@ export function App() {
       opened?.close();
     };
   }, []);
+
+  // Once there is something worth keeping, ask the browser not to evict it.
+  const hasLessons = (data?.lessons.length ?? 0) > 0;
+  useEffect(() => {
+    if (hasLessons) void askToPersist();
+  }, [hasLessons]);
 
   const store = useMemo<Store | null>(() => {
     if (!db || !data) return null;

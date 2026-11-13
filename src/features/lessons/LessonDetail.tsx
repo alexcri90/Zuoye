@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Zh } from '../../components/ui.tsx';
+import { exportFileName, makeLessonPack } from '../../lib/backup.ts';
 import type { ItemStore } from '../../lib/db.ts';
+import { downloadJson } from '../../lib/files.ts';
 import { generateExercises } from '../../lib/ingest/pipeline.ts';
 import { count } from '../../lib/italian.ts';
 import { currentProvider, hasApiKey } from '../../lib/llm/index.ts';
@@ -178,6 +180,16 @@ export function LessonDetail({ id }: { id: string }) {
       <div className="stack">
         <button type="button" className="btn btn-block" disabled={busy || !hasApiKey()} onClick={() => void generate()}>
           {busy ? 'Genero…' : 'Genera altri esercizi'}
+        </button>
+        <button
+          type="button"
+          className="btn btn-block"
+          onClick={() => {
+            const pack = makeLessonPack(data, id, Date.now());
+            if (pack) downloadJson(exportFileName('lezione', Date.now(), lesson.number), pack);
+          }}
+        >
+          Esporta per i compagni
         </button>
         <button type="button" className="btn btn-block btn-danger" onClick={() => void removeLesson()}>
           Elimina la lezione

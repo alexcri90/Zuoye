@@ -3,6 +3,7 @@ import { PageHead } from '../../components/ui.tsx';
 import { count } from '../../lib/italian.ts';
 import { SAMPLE_LESSON_ID, sampleLesson } from '../../lib/sample.ts';
 import { useStore } from '../../store.ts';
+import { ImportButton } from '../data/ImportButton.tsx';
 
 /** The list of lessons. */
 export function Lessons() {
@@ -55,6 +56,8 @@ export function Lessons() {
           })}
         </div>
       )}
+
+      <ImportButton label="Importa una lezione già pronta" />
 
       {!hasSample && (
         <button type="button" className="btn btn-block" disabled={busy} onClick={() => void addSample()}>
