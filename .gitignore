@@ -12,6 +12,7 @@ materiali/*
 # Dipendenze e build
 node_modules/
 dist/
+dist-*/
 .vite/
 coverage/
 

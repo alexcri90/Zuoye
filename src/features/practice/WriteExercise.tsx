@@ -5,6 +5,8 @@ import { hanChars } from '../../lib/hanzi.ts';
 import { combineEffort, rateWriting, type WritingEffort } from '../../lib/practice.ts';
 import type { Vocab } from '../../lib/schema.ts';
 import type { Rating } from '../../lib/srs.ts';
+import { STROKE_LENIENCY } from '../../lib/strokes.ts';
+import { useStore } from '../../store.ts';
 
 const OUTCOME: Record<Rating, { title: string; ok: boolean }> = {
   easy: { title: 'Ben scritto', ok: true },
@@ -15,6 +17,7 @@ const OUTCOME: Record<Rating, { title: string; ok: boolean }> = {
 
 /** Exercise 2: from pinyin and meaning, write the word one character at a time. */
 export function WriteExercise({ vocab, onDone }: { vocab: Vocab; onDone: (rating: Rating | null) => void }) {
+  const { prefs } = useStore();
   const chars = hanChars(vocab.hanzi);
   const [position, setPosition] = useState(0);
   const [efforts, setEfforts] = useState<WritingEffort[]>([]);
@@ -64,6 +67,7 @@ export function WriteExercise({ vocab, onDone }: { vocab: Vocab; onDone: (rating
           <HanziQuiz
             key={position}
             char={chars[position]!}
+            leniency={STROKE_LENIENCY[prefs.strokes]}
             onComplete={(effort) => {
               setEfforts((list) => [...list, effort]);
               setPosition((p) => p + 1);

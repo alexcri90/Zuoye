@@ -18,6 +18,12 @@
   --font-zh: 'Kaiti SC', STKaiti, KaiTi, 'KaiTi_GB2312', 'Songti SC', 'Noto Serif CJK SC', 'Source Han Serif SC', SimSun,
     serif;
 
+  /* Main buttons and selected chips. In the original look they are plain ink. */
+  --primary: var(--ink);
+  --on-primary: var(--paper);
+  /* A second accent, used only by the "nuovo" look; here it is just the hairline. */
+  --gold: var(--hairline);
+
   --radius: 14px;
   --gap: 20px;
   --tabbar: 62px;
@@ -257,9 +263,9 @@ button {
 }
 
 .btn-primary {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--paper);
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
 }
 
 .btn-danger {
@@ -306,9 +312,9 @@ button {
 }
 
 .chip[aria-pressed='true'] {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--paper);
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
 }
 
 .input {
@@ -600,6 +606,13 @@ button {
 .tian canvas {
   display: block;
   touch-action: none;
+}
+
+.grid-note {
+  min-height: 1.5em;
+  margin: -4px 0;
+  color: var(--vermilion);
+  text-align: center;
 }
 
 .char-dots {

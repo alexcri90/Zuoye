@@ -7,7 +7,7 @@ import path from 'node:path';
 import { chromium } from 'playwright-core';
 
 const root = path.resolve(import.meta.dirname, '..');
-const dist = path.join(root, 'dist');
+const dist = path.join(root, process.env.E2E_DIST ?? 'dist');
 const out = path.join(root, 'e2e-out');
 // A sub-path by default, to prove the build does not assume the domain root; E2E_PREFIX=/ checks the root.
 const PREFIX = process.env.E2E_PREFIX ?? '/sotto/cartella/';
@@ -247,6 +247,14 @@ try {
   await page.reload();
   await page.waitForSelector('.chips');
   check('settings survive a reload', (await button(page, '5').getAttribute('aria-pressed')) === 'true');
+
+  // The stroke tolerance is a setting too.
+  await button(page, 'Tollerante').click();
+  await page.reload();
+  await page.waitForSelector('.chips');
+  check('stroke tolerance survives a reload', (await button(page, 'Tollerante').getAttribute('aria-pressed')) === 'true');
+  await button(page, 'Normale').click();
+  check('the default stroke tolerance is the middle one', (await button(page, 'Normale').getAttribute('aria-pressed')) === 'true');
 
   // ---------- a whole session, to the summary ----------
   await page.goto(`${base}#/practice/mista`);

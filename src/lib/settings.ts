@@ -17,7 +17,12 @@ export const DEFAULT_FALLBACK_MODEL = 'gemini-3.5-flash-lite';
 const MODEL_NAME = /^[a-z0-9][a-z0-9.-]{2,59}$/;
 const modelName = (fallback: string) => z.string().regex(MODEL_NAME).catch(fallback);
 
+/** How forgiving the stroke recognition of the writing exercise is. */
+export const STROKE_LEVELS = ['precisa', 'normale', 'tollerante'] as const;
+export type StrokeLevel = (typeof STROKE_LEVELS)[number];
+
 const PrefsSchema = z.object({
+  strokes: z.enum(STROKE_LEVELS).catch('normale'),
   model: modelName(DEFAULT_MODEL),
   fallbackModel: modelName(DEFAULT_FALLBACK_MODEL),
   /** Items per practice session. */

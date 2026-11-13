@@ -6,6 +6,8 @@ import { Zh } from './ui.tsx';
 
 interface Props {
   char: string;
+  /** How forgiving the stroke recognition is; 1 is Hanzi Writer's default, larger forgives more. */
+  leniency: number;
   /** Called once the character has been written to the end. */
   onComplete: (effort: WritingEffort) => void;
   /** Called when the user moves on from a character that has no stroke data. */
@@ -17,12 +19,13 @@ type Status = 'loading' | 'ready' | 'showing' | 'done' | 'missing';
 const HINT_AFTER_MISSES = 3;
 
 /** One writing grid (田字格): the character is written stroke by stroke with the finger. */
-export function HanziQuiz({ char, onComplete, onSkip }: Props) {
+export function HanziQuiz({ char, leniency, onComplete, onSkip }: Props) {
   const box = useRef<HTMLDivElement>(null);
   const actions = useRef<{ outline: () => void; reveal: () => void } | null>(null);
   const latestComplete = useRef(onComplete);
   const [status, setStatus] = useState<Status>('loading');
   const [outlined, setOutlined] = useState(false);
+  const [backwards, setBackwards] = useState(false);
 
   useEffect(() => {
     latestComplete.current = onComplete;
@@ -63,13 +66,29 @@ export function HanziQuiz({ char, onComplete, onSkip }: Props) {
       },
     });
 
+    // Progress is also written on the grid element, for the browser checks to read.
+    const grid = el.parentElement;
+    const report = (done: number) => {
+      if (!grid) return;
+      grid.dataset.done = String(done);
+      grid.dataset.mistakes = String(effort.mistakes);
+    };
+
     const startQuiz = () =>
       void writer.quiz({
+        leniency,
         showHintAfterMisses: HINT_AFTER_MISSES,
         highlightOnComplete: true,
         onMistake: (stroke) => {
           effort.mistakes++;
           if (stroke.mistakesOnStroke >= HINT_AFTER_MISSES) effort.hinted = true;
+          report(stroke.strokeNum);
+          // A stroke of the right shape drawn the wrong way round is refused: say why.
+          if (alive) setBackwards(stroke.isBackwards);
+        },
+        onCorrectStroke: (stroke) => {
+          report(stroke.strokeNum + 1);
+          if (alive) setBackwards(false);
         },
         onComplete: () => {
           if (!alive) return;
@@ -112,13 +131,16 @@ export function HanziQuiz({ char, onComplete, onSkip }: Props) {
       writer.cancelQuiz();
       el.replaceChildren();
     };
-  }, [char]);
+  }, [char, leniency]);
 
   return (
     <>
       <div className="tian" data-status={status} data-char={char}>
         <div ref={box} />
       </div>
+      <p className="grid-note small" role="status">
+        {backwards && status === 'ready' ? "La forma è giusta, ma il tratto va nell'altro verso." : ''}
+      </p>
       {status === 'missing' ? (
         <div className="stack" style={{ alignItems: 'center' }}>
           <p className="muted small">

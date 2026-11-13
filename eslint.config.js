@@ -3,7 +3,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
-  globalIgnores(['dist/', 'node_modules/', 'materiali/', 'coverage/']),
+  globalIgnores(['dist/', 'dist-*/', 'e2e-out/', 'node_modules/', 'materiali/', 'coverage/']),
   tseslint.configs.recommendedTypeChecked,
   {
     languageOptions: {

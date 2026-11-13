@@ -14,11 +14,17 @@ import {
   maskKey,
   requestsToday,
   setApiKey,
+  type StrokeLevel,
 } from '../../lib/settings.ts';
 import { useStore } from '../../store.ts';
 import { ImportButton } from '../data/ImportButton.tsx';
 
 const SESSION_SIZES = [5, 10, 15, 20, 30];
+const STROKE_OPTIONS: Array<[StrokeLevel, string]> = [
+  ['precisa', 'Precisa'],
+  ['normale', 'Normale'],
+  ['tollerante', 'Tollerante'],
+];
 /** Free-tier text models on 2026-11-11; "Verifica chiave" replaces this with what the key can really use. */
 const KNOWN_MODELS = [DEFAULT_MODEL, 'gemini-3.6-flash', DEFAULT_FALLBACK_MODEL, 'gemini-3.1-flash-lite'];
 
@@ -174,6 +180,28 @@ export function Settings() {
               onClick={() => setPrefs({ sessionSize: size })}
             >
               {size}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <hr className="rule" />
+
+      <section className="stack">
+        <h2 className="section-title">Scrittura dei caratteri</h2>
+        <p className="muted small">
+          Quanto deve essere preciso un tratto per essere riconosciuto. L&apos;ordine e il verso dei tratti contano sempre.
+        </p>
+        <div className="chips">
+          {STROKE_OPTIONS.map(([level, label]) => (
+            <button
+              key={level}
+              type="button"
+              className="chip"
+              aria-pressed={prefs.strokes === level}
+              onClick={() => setPrefs({ strokes: level })}
+            >
+              {label}
             </button>
           ))}
         </div>

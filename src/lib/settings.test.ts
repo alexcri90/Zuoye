@@ -79,6 +79,7 @@ describe('api key', () => {
 describe('preferences', () => {
   it('have defaults', () => {
     expect(loadPrefs(memoryStore())).toEqual({
+      strokes: 'normale',
       model: DEFAULT_MODEL,
       fallbackModel: DEFAULT_FALLBACK_MODEL,
       sessionSize: 10,
@@ -97,8 +98,20 @@ describe('preferences', () => {
     const store = memoryStore();
     store.setItem('zuoye.prefs', '{not json');
     expect(loadPrefs(store).sessionSize).toBe(10);
-    store.setItem('zuoye.prefs', JSON.stringify({ model: '../../evil?x=', sessionSize: 9999, lessons: 'tutte' }));
-    expect(loadPrefs(store)).toEqual({ model: DEFAULT_MODEL, fallbackModel: DEFAULT_FALLBACK_MODEL, sessionSize: 10, lessons: [] });
+    store.setItem('zuoye.prefs', JSON.stringify({ model: '../../evil?x=', sessionSize: 9999, lessons: 'tutte', strokes: 'qualsiasi' }));
+    expect(loadPrefs(store)).toEqual({
+      strokes: 'normale',
+      model: DEFAULT_MODEL,
+      fallbackModel: DEFAULT_FALLBACK_MODEL,
+      sessionSize: 10,
+      lessons: [],
+    });
+  });
+
+  it('remember the stroke tolerance', () => {
+    const store = memoryStore();
+    savePrefs({ strokes: 'tollerante' }, store);
+    expect(loadPrefs(store)).toMatchObject({ strokes: 'tollerante' });
   });
 
   it('accept only plain model names', () => {

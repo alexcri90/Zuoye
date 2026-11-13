@@ -1,6 +1,7 @@
 /** Stroke data for the writing exercise, loaded from the app's own address. */
 import { z } from 'zod';
 import { strokeFile } from './hanzi.ts';
+import type { StrokeLevel } from './settings.ts';
 
 const StrokesSchema = z.object({
   strokes: z.array(z.string().max(20000)).min(1).max(80),
@@ -13,6 +14,14 @@ export type Strokes = z.infer<typeof StrokesSchema>;
 export function strokesUrl(char: string, base: string): string {
   return new URL(`hanzi/${strokeFile(char)}`, base).href;
 }
+
+/**
+ * Hanzi Writer's leniency for each setting. 1 is the library's default: it
+ * scales how far a stroke may be from the model, where it may start and end,
+ * and how closely its shape must follow. Values chosen by measurement; see
+ * PLAN.md, section 19.3 (session 4).
+ */
+export const STROKE_LENIENCY: Record<StrokeLevel, number> = { precisa: 1, normale: 1.5, tollerante: 2 };
 
 const warmed = new Set<string>();
 
