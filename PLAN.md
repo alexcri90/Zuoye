@@ -329,7 +329,7 @@ The phone needs the app on an HTTPS address. The build is fully static and uses 
 
 | Option | Cost | Notes |
 |---|---|---|
-| Make the repo public + GitHub Pages | Free | Simplest. The repo holds only code; materials are git-ignored and stay local. Recommended |
+| Make the repo public + GitHub Pages | Free | Simplest. The repo holds only code; materials are git-ignored and stay local. Recommended. **Chosen on 2026-11-13** |
 | Keep private + Cloudflare Pages | Free | Needs a Cloudflare account linked to the repo |
 | Keep private + GitHub Pages | Free with the student pack | To confirm (see section 4) |
 | Local only, over Wi-Fi | Free | Fine for trying it out; not installable, computer must be on |
@@ -520,7 +520,7 @@ Google's documentation has moved from `ai.google.dev` to `aistudio.google.com/do
 
 ### 19.4 Open items (keep this list current)
 
-1. **Hosting choice** (section 15), then the deployment itself. Nothing is deployed and nothing has been pushed; the CI workflow has therefore never run.
+1. **Deployment.** Hosting was chosen on 2026-11-13: **public repository + GitHub Pages** (first row of section 15). The workflow `.github/workflows/pages.yml` is written (checks, build, publish; actions pinned by hash) but has never run. Still to do, by the repository owner on GitHub: make the repository public, set *Settings → Pages → Source* to *GitHub Actions*, push `main`. Expected address: `https://alexcri90.github.io/Zuoye/`. Checked before going public: the history contains no course materials (only `materiali/.gitkeep`), no keys, and commits use a GitHub no-reply e-mail. Not checked: that Pages serves every file type the app needs (`.mjs` worker, `.wasm`, `.webmanifest`); the first deployment will show it, by adding a lesson from a PDF on the published site.
 2. **Install on the phone** and repeat the airplane-mode check there. Everything so far was seen in desktop Edge emulating a phone; finger drawing was simulated with a mouse.
 3. **Real-model check** (needs a Gemini key): one real lesson imported and its words compared with the slides; a set of right, nearly right and wrong translations graded; the notes in 19.2 confirmed or corrected (schema field, error bodies, direct browser calls, daily limits).
 4. The browser-check job in CI is unproven on a hosted runner.

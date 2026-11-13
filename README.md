@@ -54,6 +54,16 @@ npm run e2e        # drives the built app in a phone-sized browser; needs Edge (
 
 The build is static and uses relative paths: the contents of `dist/` work on any static host, at a domain root or under a sub-path.
 
+## Deployment
+
+The app is published with GitHub Pages by the workflow in `.github/workflows/pages.yml`: every push to `main` runs the checks, builds, and publishes `dist/`. One-time setup on GitHub:
+
+1. Make the repository public (*Settings → General → Danger Zone → Change repository visibility*). Free GitHub accounts can use Pages only on public repositories.
+2. Turn Pages on (*Settings → Pages → Build and deployment → Source: GitHub Actions*).
+3. Push `main`. When the *Deploy to GitHub Pages* workflow is green, the app is at `https://<user>.github.io/<repository>/`.
+
+The repository holds only code. The published site is an empty app: lessons and key exist only in the browser of whoever uses it.
+
 Course materials go in `materiali/`, which git ignores. They are never committed and never published.
 
 [PLAN.md](PLAN.md) holds the design, the reasons behind it, and a diary of what was built, tested and left open.
