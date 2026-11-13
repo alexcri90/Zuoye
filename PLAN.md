@@ -70,7 +70,7 @@ Level is roughly HSK 2. Each lesson adds 10–25 words and 2–4 grammar points.
 | AI provider | Gemini, behind a small provider interface | Free tier exists; interface keeps a later switch cheap |
 | Gemini endpoint | `generateContent` (stateless) | Fully supported, stores nothing server-side. The newer Interactions API stores requests by default |
 | PDF handling | Render pages in the browser with pdf.js, send downscaled JPEGs + text layer | Works with 30 MB PDFs, small uploads, not tied to Gemini's file upload |
-| DOCX handling | Unzip with `fflate`, read `word/document.xml` with `DOMParser` | ~10 KB instead of a heavy converter; less attack surface |
+| DOCX handling | Unzip with `fflate`, read `word/document.xml` with a small tag walk (changed from `DOMParser` on 2026-11-11: testable in Node, text-only output) | ~10 KB instead of a heavy converter; less attack surface |
 | Stroke writing | Hanzi Writer + self-hosted stroke data | MIT library, quiz mode built in; no third-party CDN at runtime |
 | Spaced repetition | Own SM-2 variant, one memory per item per skill | ~60 lines, fully testable, no dependency |
 | Pinyin grading | Own deterministic engine | Tones must be checked exactly; no AI guesswork |
@@ -476,4 +476,20 @@ Google's documentation has moved from `ai.google.dev` to `aistudio.google.com/do
 - **Phase 3 in progress** (ingestion). No `.env.local`, so everything is built against mocked model responses.
   - Done and unit-tested (127 tests in total): `src/lib/ingest/docx.ts` (reads only `word/document.xml`, size-capped, tag walk instead of `DOMParser` so it is testable in Node and produces text only; underlined spaces become a blank); `src/lib/llm/provider.ts` (interface, Italian error messages); `src/lib/llm/gemini.ts` (retries and fallbacks of section 11, key only in the header, key scrubbed from every error).
   - Run locally on the six real homework files: the DOCX reader returns clean text for all of them. Blanks are typed as runs of 3–5 underscores, so normalisation treats any run of two or more underscores as the blank.
-  - Still to write in this phase: JSON schemas and prompts, normalisation, PDF and image readers, pipeline, the add-lesson flow with its review screen, lesson detail, key and model in Settings.
+  - Still to write in this phase: JSON schemas and prompts, normalisation, PDF and image readers, pipeline, the add-lesson flow with its review screen, lesson detail, key and model in Settings. *(All written later the same evening; see session 3.)*
+- The session ended on the plan's 5-hour usage limit, right after the ingestion browser check first passed. The owner committed the work as `6bd8d07`.
+
+**2026-11-13, session 3 (morning).**
+
+- Resumed from `6bd8d07` with a clean tree. Gates re-run and passing before any change.
+- **Phase 3 finished, except for the real-model check** (see "Open" below).
+  - Written (in `6bd8d07` and this session): `src/lib/llm/jsonSchemas.ts` (plain-keyword JSON Schemas, with a test that keeps them field-for-field in step with the zod schemas), `src/lib/llm/prompts.ts` (three Italian prompts; lesson text and student answers wrapped in delimiters and declared to be data), `src/lib/llm/index.ts`, `src/lib/ingest/normalize.ts`, `pdf.ts`, `image.ts`, `pipeline.ts`, `src/lib/italian.ts`, screens `AddLesson`, `ReviewDraft`, `LessonDetail`, key/model/usage in `Settings`, `scripts/e2e-lib.mjs`, `scripts/e2e-ingest.mjs`.
+  - Ran and saw passing: 148 unit tests, type-check, lint, build, `scripts/e2e.mjs` (29 checks), `scripts/e2e-ingest.mjs` (33 checks; 47 with `E2E_ALL=1`).
+  - Seen working in the browser, on the built app with the production CSP, with the Gemini endpoint intercepted and answered by a made-up lesson: key entry (malformed key refused, saved key shown masked and absent from the page), "Verifica chiave"; real lesson-2 PDF and DOCX read on the device; one extraction request with the key in the header only, a JSON schema, no sampling options, no file names, no radical look-alikes; review screen (entries without Chinese dropped, look-alikes fixed, tone numbers converted, doubtful pinyin marked and cleared when fixed, deletion); save; one text-only generation request; lesson detail; lesson number taken from the file name; failures 429 and invalid key explained in Italian, nothing saved, key never shown; lesson deletion; requests only to the app and the model endpoint; no console or CSP errors from pdf.js.
+  - **All seven real lessons were read by the real reader** (`E2E_ALL=1`): 27–36 page images and 7.7–10.9 k characters of text per lesson, request size 1.5–2.3 MB (limit 20 MB), 1–3 seconds each on this computer, every file readable. Lesson 1's scanned exercise PDF is included as images. Rendered pages were looked at: characters and the small pinyin in the picture-only dialogues are clearly legible at 1000 px.
+  - Deviations from the plan, and why:
+    1. DOCX is read with a tag walk, not `DOMParser` (section 3): same result, testable in Node, cannot produce markup.
+    2. File names are not sent to the model; documents are labelled "Documento 1 (PDF)". They add nothing and may contain names.
+    3. pdf.js also needs its `iccs` folder; the build now publishes it under `pdfjs/iccs`.
+    4. Settings shows how many requests were sent today from this device, because the free tier's limits are not published.
+  - **Open: the real-model check.** No Gemini request has ever been made (no `.env.local`, no key). Unverified until then: whether `responseJsonSchema` is honoured (the client falls back to no schema on a 400), the real error bodies, whether the browser may call the API directly (CORS), the quality of the extraction prompt on the real lessons, and how many requests the free tier allows per day. To close it: put `GEMINI_API_KEY=...` in a git-ignored `.env.local`, or type the key into Settings on the running app and import a lesson.

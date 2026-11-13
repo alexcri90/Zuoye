@@ -6,6 +6,7 @@
  */
 import { newId } from '../db.ts';
 import { compactZh, hanChars, hasHan, isHan, normalizeHan, unmappedRadicals } from '../hanzi.ts';
+import { count } from '../italian.ts';
 import { isPinyin, normalizePinyin, syllablesOf } from '../pinyin.ts';
 import { BLANK, LIMITS, type Example, type Extraction, type Generation, type LessonBundle } from '../schema.ts';
 
@@ -159,9 +160,11 @@ export function normalizeExtraction(raw: Extraction, known: ReadonlySet<string>,
       suspect: pinyinIsSuspect(pinyin, hanzi),
     });
   }
-  if (dropped > 0) warnings.push(`${dropped} voci scartate perché senza caratteri cinesi.`);
+  if (dropped > 0) warnings.push(`${count(dropped, 'voce scartata', 'voci scartate')} perché senza caratteri cinesi.`);
   const suspects = vocab.filter((v) => v.suspect).length;
-  if (suspects > 0) warnings.push(`${suspects} parole con pinyin da controllare (evidenziate).`);
+  if (suspects > 0) {
+    warnings.push(`${count(suspects, 'parola', 'parole')} con pinyin da controllare (${suspects === 1 ? 'evidenziata' : 'evidenziate'}).`);
+  }
 
   const grammar: DraftGrammar[] = raw.grammar
     .map((g) => ({

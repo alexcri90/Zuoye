@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Zh } from '../../components/ui.tsx';
 import type { ItemStore } from '../../lib/db.ts';
 import { generateExercises } from '../../lib/ingest/pipeline.ts';
+import { count } from '../../lib/italian.ts';
 import { currentProvider, hasApiKey } from '../../lib/llm/index.ts';
 import { LlmError } from '../../lib/llm/provider.ts';
 import { BLANK } from '../../lib/schema.ts';
@@ -59,7 +60,7 @@ export function LessonDetail({ id }: { id: string }) {
       const extra = await generateExercises(currentProvider(prefs), data, id);
       await db.addExercises(extra.sentences, extra.clozes);
       await refresh();
-      setMessage(`Aggiunti ${extra.sentences.length} frasi e ${extra.clozes.length} esercizi.`);
+      setMessage(`Esercizi aggiunti: ${count(extra.sentences.length, 'frase', 'frasi')} e ${count(extra.clozes.length, 'completamento', 'completamenti')}.`);
     } catch (e) {
       setMessage(e instanceof LlmError ? e.message : 'Non sono riuscito a generare gli esercizi.');
     } finally {

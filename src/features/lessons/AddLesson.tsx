@@ -3,6 +3,7 @@ import { PageHead } from '../../components/ui.tsx';
 import { newId } from '../../lib/db.ts';
 import { draftToBundle, type Draft } from '../../lib/ingest/normalize.ts';
 import { extractLesson, fileKind, generateExercises, readFiles, type ReadProgress } from '../../lib/ingest/pipeline.ts';
+import { count } from '../../lib/italian.ts';
 import { currentProvider, hasApiKey } from '../../lib/llm/index.ts';
 import { LlmError } from '../../lib/llm/provider.ts';
 import { navigate } from '../../router.ts';
@@ -76,7 +77,7 @@ export function AddLesson() {
       const extra = await generateExercises(currentProvider(prefs), await db.snapshot(), lessonId, run.signal);
       await db.addExercises(extra.sentences, extra.clozes);
       await refresh();
-      note = `Aggiunti ${extra.sentences.length} frasi e ${extra.clozes.length} esercizi nuovi.`;
+      note = `Esercizi aggiunti: ${count(extra.sentences.length, 'frase', 'frasi')} e ${count(extra.clozes.length, 'completamento', 'completamenti')}.`;
     } catch (e) {
       note = run.signal.aborted
         ? 'Generazione degli esercizi saltata: puoi farla più tardi dalla pagina della lezione.'

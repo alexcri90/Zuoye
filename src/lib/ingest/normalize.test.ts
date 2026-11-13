@@ -125,7 +125,7 @@ describe('normalizeExtraction', () => {
   it('flags words known from earlier lessons and pinyin to check', () => {
     expect(draft.vocab.filter((v) => v.known).map((v) => v.hanzi)).toEqual(['坐']);
     expect(draft.vocab.filter((v) => v.suspect).map((v) => v.hanzi)).toEqual(['骑', '自行车']);
-    expect(draft.warnings.join(' ')).toContain('1 voci scartate');
+    expect(draft.warnings.join(' ')).toContain('1 voce scartata');
     expect(draft.warnings.join(' ')).toContain('2 parole con pinyin da controllare');
   });
 

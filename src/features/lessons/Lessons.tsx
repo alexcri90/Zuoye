@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { PageHead } from '../../components/ui.tsx';
+import { count } from '../../lib/italian.ts';
 import { SAMPLE_LESSON_ID, sampleLesson } from '../../lib/sample.ts';
 import { useStore } from '../../store.ts';
 
@@ -43,7 +44,7 @@ export function Lessons() {
                   <span className="row-title">{lesson.number > 0 ? `${lesson.number}. ${lesson.title}` : lesson.title}</span>
                   <br />
                   <span className="muted small">
-                    {words} parole · {sentences} frasi
+                    {count(words, 'parola', 'parole')} · {count(sentences, 'frase', 'frasi')}
                   </span>
                 </span>
                 <span className="muted" aria-hidden="true">

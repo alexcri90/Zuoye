@@ -85,6 +85,14 @@ async function mockModel(context) {
       text: parts.map((p) => p.text ?? '').join('\n'),
       config: body.generationConfig,
     });
+    // E2E_DUMP=1 saves the page images of the first extraction, to judge their legibility by eye.
+    if (process.env.E2E_DUMP === '1' && kind === 'extraction' && seen.filter((x) => x.kind === 'extraction').length === 1) {
+      const dir = path.join(root, 'e2e-out', 'pages');
+      fs.mkdirSync(dir, { recursive: true });
+      parts.filter((p) => p.inlineData).forEach((p, i) => {
+        fs.writeFileSync(path.join(dir, `page-${String(i + 1).padStart(2, '0')}.jpg`), Buffer.from(p.inlineData.data, 'base64'));
+      });
+    }
     if (mode === 'quota') {
       await route.fulfill({ status: 429, json: { error: { code: 429, status: 'RESOURCE_EXHAUSTED', message: 'daily quota' } } });
     } else if (mode === 'badkey') {
@@ -171,7 +179,7 @@ try {
   await button(page, 'Salva la lezione').click();
   await page.waitForSelector('text=Lezione salvata', { timeout: 30000 });
   const done = await page.locator('.notice').innerText();
-  check('save: extra exercises are generated', done.includes('1 frasi') && done.includes('1 esercizi'), done);
+  check('save: extra exercises are generated', done.includes('1 frase') && done.includes('1 completamento'), done);
   const generationRequest = seen.find((x) => x.kind === 'generation');
   check('generation: text only', generationRequest.images === 0 && generationRequest.text.includes('地铁'));
   await button(page, 'Apri la lezione').click();
@@ -226,6 +234,8 @@ try {
       if (set.length === 0) continue;
       const before = seen.length;
       const started = Date.now();
+      await page.goto(`${base}#/lessons`); // leave the review of the previous lesson
+      await page.waitForSelector('text=Aggiungi una lezione');
       await page.goto(`${base}#/lessons/new`);
       await page.locator('input[type="file"]').setInputFiles(set);
       await button(page, 'Estrai la lezione').click();
