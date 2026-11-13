@@ -95,6 +95,9 @@ async function mockModel(context) {
     }
     if (mode === 'quota') {
       await route.fulfill({ status: 429, json: { error: { code: 429, status: 'RESOURCE_EXHAUSTED', message: 'daily quota' } } });
+    } else if (mode === 'overloaded' && url.includes('/gemini-3.8-flash:')) {
+      // What the free tier often answers for its newest model.
+      await route.fulfill({ status: 503, json: { error: { code: 503, status: 'UNAVAILABLE', message: 'The model is overloaded. Please try again later.' } } });
     } else if (mode === 'badkey') {
       await route.fulfill({ status: 400, json: { error: { code: 400, status: 'INVALID_ARGUMENT', message: 'API key not valid.' } } });
     } else {
@@ -215,6 +218,25 @@ try {
     check(`failure "${m}" does not show the key`, !message.includes(FAKE_KEY));
   }
   await shot(page, '37-add-error');
+
+  // ---------- an overloaded main model: the trial says so, and the fallback takes over ----------
+  mode = 'overloaded';
+  await page.goto(`${base}#/settings`);
+  await button(page, 'Prova i modelli').click();
+  await page.waitForSelector('text=non risponde');
+  const trial = (await page.locator('[aria-label="Esito della prova dei modelli"]').innerText()).replace(/\s+/g, ' ');
+  check('model trial tells an overloaded model from one that answers', trial.includes('gemini-3.8-flash: non risponde') && trial.includes('503: The model is overloaded') && trial.includes('gemini-3.5-flash-lite: risponde'), trial.slice(0, 200));
+  await shot(page, '38-model-trial', true);
+  const beforeOverload = seen.length;
+  await page.goto(`${base}#/lessons`);
+  await page.waitForSelector('text=Aggiungi una lezione');
+  await page.goto(`${base}#/lessons/new`);
+  await page.locator('input[type="file"]').setInputFiles([fixtureDocx()]);
+  await button(page, 'Estrai la lezione').click();
+  const rescued = await page.waitForSelector('text=Controlla', { timeout: 60000 }).then(() => true, () => false);
+  const attempts = seen.slice(beforeOverload).filter((x) => x.kind === 'extraction');
+  check('overloaded main model: the lesson is extracted by the fallback model', rescued && attempts.at(-1)?.url.includes('flash-lite') === true, `${attempts.length} attempts, last on ${attempts.at(-1)?.url.split('/models/')[1]}`);
+  check('overloaded main model: tried again, then without the schema, before switching', attempts.length === 4 && Boolean(attempts[1].config?.responseJsonSchema) && !attempts[2].config?.responseJsonSchema);
   mode = 'ok';
   await page.goto(`${base}#/lessons`);
   await page.waitForSelector('a.row');
@@ -253,8 +275,8 @@ try {
   const outside = [...new Set(s.requests.filter((u) => !u.startsWith(base) && !u.startsWith(API) && !u.startsWith('data:') && !u.startsWith('blob:')))];
   check('requests went only to the app and the model endpoint', outside.length === 0, outside.join(', '));
   for (const failure of new Set(s.failures)) console.log(`failed request: ${failure}`);
-  // The two simulated failures (429, 400) are logged by the browser as failed resources.
-  const unexpected = s.problems.filter((p) => !/status of (429|400)/.test(p));
+  // The simulated failures (429, 400, 503) are logged by the browser as failed resources.
+  const unexpected = s.problems.filter((p) => !/status of (429|400|503)/.test(p));
   check('no console errors (CSP included) while reading PDFs', unexpected.length === 0, unexpected.slice(0, 4).join(' || '));
 } catch (error) {
   check('run completed', false, String(error).split('\n')[0]);

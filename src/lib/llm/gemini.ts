@@ -3,13 +3,15 @@
  * The key travels only in a request header: never in a URL, a log or an error.
  * Request shape as documented on 2026-11-11 (see PLAN.md, section 19.2).
  */
-import { LlmError, type JsonRequest, type Part, type Provider } from './provider.ts';
+import { LlmError, type JsonRequest, type ModelTest, type Part, type Provider } from './provider.ts';
 
 const BASE = 'https://generativelanguage.googleapis.com/v1beta';
 /** The service accepts 20 MB per request; leave room for the text and the JSON wrapping. */
 const MAX_INLINE_CHARS = 18_000_000;
 const SHORT_WAIT_MS = 20_000;
-const SERVER_RETRIES = 2;
+/** How long a main model that kept failing is skipped in favour of the fallback. */
+const UNWELL_MS = 10 * 60_000;
+const unwell = new Map<string, number>();
 
 export interface GeminiOptions {
   apiKey: string;
@@ -104,7 +106,8 @@ export function createGemini(options: GeminiOptions): Provider {
   }
 
   function failure(info: ErrorInfo): LlmError {
-    const detail = scrub(info.message);
+    // The status and the service's own words, so a failure can be diagnosed from the screen.
+    const detail = scrub(`${info.status}${info.message ? `: ${info.message}` : ''}`);
     // An invalid key may come back as 400, 401 or 403 (the documentation disagrees with itself).
     const keyProblem =
       [400, 401, 403].includes(info.status) && /api[ _-]?key|authentication/i.test(`${info.message} ${info.reason}`);
@@ -122,12 +125,13 @@ export function createGemini(options: GeminiOptions): Provider {
     const inline = request.parts.reduce((n, p) => n + ('image' in p ? p.image.data.length : p.text.length), 0);
     if (inline > MAX_INLINE_CHARS) throw new LlmError('too-large');
 
-    let model = options.model;
+    const fallback = options.fallbackModel && options.fallbackModel !== options.model ? options.fallbackModel : undefined;
+    // A main model that kept failing a moment ago is skipped for a while.
+    let model = fallback && (unwell.get(options.model) ?? 0) > Date.now() ? fallback : options.model;
     let withSchema = true;
     let waited = false;
-    let serverRetries = 0;
+    let serverFailures = 0;
     let reasked = false;
-    const fallback = options.fallbackModel && options.fallbackModel !== options.model ? options.fallbackModel : undefined;
 
     for (;;) {
       const generationConfig: Record<string, unknown> = { responseMimeType: 'application/json' };
@@ -135,8 +139,12 @@ export function createGemini(options: GeminiOptions): Provider {
         generationConfig.responseJsonSchema = request.jsonSchema;
         if (request.effort === 'low') generationConfig.thinkingConfig = { thinkingLevel: 'LOW' };
       }
+      // Without the schema as an option, the model still has to know the shape: it goes in the instructions.
+      const system = withSchema
+        ? request.system
+        : `${request.system}\n\nLa risposta deve rispettare questo schema JSON:\n${JSON.stringify(request.jsonSchema)}`;
       const body = {
-        systemInstruction: { parts: [{ text: request.system }] },
+        systemInstruction: { parts: [{ text: system }] },
         contents: [{ role: 'user', parts: request.parts.map(toApiPart) }],
         generationConfig,
       };
@@ -169,7 +177,11 @@ export function createGemini(options: GeminiOptions): Provider {
           // Handled below: ask once more.
         }
         const checked = parsed ? request.schema.safeParse(value) : undefined;
-        if (checked?.success) return checked.data;
+        if (checked?.success) {
+          // The fallback answered where the main model kept failing: use it directly for a while.
+          if (model !== options.model && serverFailures > 0) unwell.set(options.model, Date.now() + UNWELL_MS);
+          return checked.data;
+        }
         if (!reasked) {
           reasked = true;
           continue;
@@ -188,10 +200,26 @@ export function createGemini(options: GeminiOptions): Provider {
           model = fallback;
           continue;
         }
-      } else if (info.status >= 500 && serverRetries < SERVER_RETRIES) {
-        serverRetries++;
-        await sleep(1500 * 2 ** (serverRetries - 1));
-        continue;
+      } else if (info.status >= 500) {
+        // A server error can be a passing hiccup, a schema the service chokes on, or an
+        // overloaded model. Try each remedy in turn: the same again, then without the
+        // schema, then the fallback model (with the schema, then without).
+        serverFailures++;
+        if (serverFailures === 1) {
+          await sleep(1500);
+          continue;
+        }
+        if (withSchema) {
+          withSchema = false;
+          continue;
+        }
+        if (fallback && model !== fallback) {
+          model = fallback;
+          withSchema = true;
+          serverFailures = 1;
+          await sleep(1500);
+          continue;
+        }
       } else if (info.status === 404 && fallback && model !== fallback) {
         model = fallback;
         continue;
@@ -222,5 +250,38 @@ export function createGemini(options: GeminiOptions): Provider {
       .sort();
   }
 
-  return { generateJson, listModels };
+  /** One tiny request to each configured model, to tell "the key works" from "this model answers". */
+  async function testModels(signal?: AbortSignal): Promise<ModelTest[]> {
+    if (!key) throw new LlmError('no-key');
+    const results: ModelTest[] = [];
+    for (const model of new Set([options.model, options.fallbackModel ?? options.model])) {
+      try {
+        const response = await send(
+          `${BASE}/models/${encodeURIComponent(model)}:generateContent`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'Rispondi con la sola parola: ok' }] }] }),
+          },
+          signal,
+        );
+        if (response.ok) {
+          results.push({ model, ok: true, detail: '' });
+        } else {
+          const error = failure(await readError(response));
+          results.push({ model, ok: false, detail: `${error.message} (${error.detail})` });
+        }
+      } catch (error) {
+        results.push({ model, ok: false, detail: error instanceof LlmError ? error.message : 'errore imprevisto' });
+      }
+    }
+    return results;
+  }
+
+  return { generateJson, listModels, testModels };
+}
+
+/** Forgets which models were failing (for tests, and when the key or the model choice changes). */
+export function resetModelHealth(): void {
+  unwell.clear();
 }

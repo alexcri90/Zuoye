@@ -20,10 +20,20 @@ export interface JsonRequest<T> {
   signal?: AbortSignal;
 }
 
+/** The outcome of one tiny trial request to a model. */
+export interface ModelTest {
+  model: string;
+  ok: boolean;
+  /** Why it failed, in Italian with the service's own words; empty when it worked. */
+  detail: string;
+}
+
 export interface Provider {
   generateJson<T>(request: JsonRequest<T>): Promise<T>;
   /** Names of the models this key can use. */
   listModels(signal?: AbortSignal): Promise<string[]>;
+  /** Asks each configured model for one word, to see which of them really answer. */
+  testModels(signal?: AbortSignal): Promise<ModelTest[]>;
 }
 
 export type LlmErrorKind =
@@ -50,7 +60,7 @@ const MESSAGES: Record<LlmErrorKind, string> = {
   blocked: 'Il modello ha rifiutato la richiesta. Non è stato salvato nulla.',
   truncated: 'La risposta del modello è arrivata incompleta. Non è stato salvato nulla: riprova con meno pagine.',
   network: 'Connessione assente o richiesta bloccata. Controlla la rete e riprova.',
-  server: 'Il servizio del modello non risponde. Riprova tra poco.',
+  server: 'Il servizio del modello ha risposto con un errore. Riprova tra poco.',
   'bad-request': 'Il modello non ha accettato la richiesta.',
   'bad-response': 'Il modello ha risposto in un formato inatteso. Riprova.',
   'too-large': 'I file sono troppo pesanti per una sola richiesta: carica meno pagine.',

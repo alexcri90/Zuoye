@@ -36,6 +36,7 @@ function fakeProvider(answer: Verdict | Error) {
       return answer instanceof Error ? Promise.reject(answer) : Promise.resolve(request.schema.parse(answer));
     },
     listModels: () => Promise.resolve([]),
+    testModels: () => Promise.resolve([]),
   };
   return { provider, requests };
 }

@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { createGemini, type GeminiOptions } from './gemini.ts';
+import { createGemini, resetModelHealth, type GeminiOptions } from './gemini.ts';
+
+beforeEach(resetModelHealth);
 import { LlmError, isUnavailable, type JsonRequest } from './provider.ts';
 
 // Made up for the tests: the right shape, not a real key.
@@ -211,14 +213,80 @@ describe('failures', () => {
     expect(calls).toHaveLength(3); // main, main after the wait, fallback
   });
 
-  it('500 and 503: up to two retries with growing pauses', async () => {
-    const ok = setup([oldError(503, 'UNAVAILABLE', 'x'), oldError(500, 'INTERNAL', 'x'), good()]);
-    expect(await ok.provider.generateJson(request)).toEqual({ word: '好' });
-    expect(ok.sleeps).toEqual([1500, 3000]);
+  const overloaded = () => oldError(503, 'UNAVAILABLE', 'The model is overloaded. Please try again later.');
+  const usesModel = (call: Call, model: string) => call.url.includes(`/models/${model}:`);
+  const hasSchema = (call: Call) => 'responseJsonSchema' in (call.body.generationConfig ?? {});
 
-    const down = setup([oldError(503, 'UNAVAILABLE', 'x'), oldError(503, 'UNAVAILABLE', 'x'), oldError(503, 'UNAVAILABLE', 'x'), good()]);
-    expect(await kindOf(down.provider.generateJson(request))).toBe('server');
-    expect(down.calls).toHaveLength(3);
+  it('server error, first remedy: the same request once more after a pause', async () => {
+    const { provider, calls, sleeps } = setup([overloaded(), good()]);
+    expect(await provider.generateJson(request)).toEqual({ word: '好' });
+    expect(sleeps).toEqual([1500]);
+    expect(calls.map((c) => [usesModel(c, 'gemini-main'), hasSchema(c)])).toEqual([
+      [true, true],
+      [true, true],
+    ]);
+  });
+
+  it('server error, second remedy: without the schema option, the schema moves into the instructions', async () => {
+    const { provider, calls } = setup([oldError(500, 'INTERNAL', 'x'), oldError(500, 'INTERNAL', 'x'), good()]);
+    expect(await provider.generateJson(request)).toEqual({ word: '好' });
+    const third = calls[2]!;
+    expect(usesModel(third, 'gemini-main')).toBe(true);
+    expect(third.body.generationConfig).toEqual({ responseMimeType: 'application/json' });
+    const system = JSON.stringify(third.body.systemInstruction);
+    expect(system).toContain('Rispondi in JSON.');
+    expect(system).toContain('schema JSON');
+    expect(system).toContain('word'); // the field the answer must have
+    // With the schema as an option, the instructions are sent as written.
+    expect(calls[0]!.body.systemInstruction).toEqual({ parts: [{ text: 'Rispondi in JSON.' }] });
+  });
+
+  it('server error, third remedy: the fallback model', async () => {
+    const { provider, calls } = setup([overloaded(), overloaded(), overloaded(), good()]);
+    expect(await provider.generateJson(request)).toEqual({ word: '好' });
+    expect(calls.map((c) => [usesModel(c, 'gemini-main'), hasSchema(c)])).toEqual([
+      [true, true],
+      [true, true],
+      [true, false],
+      [false, true],
+    ]);
+    expect(usesModel(calls[3]!, 'gemini-lite')).toBe(true);
+  });
+
+  it('server error everywhere: gives up after five attempts and says what the service answered', async () => {
+    const { provider, calls } = setup([overloaded(), overloaded(), overloaded(), overloaded(), overloaded(), good()]);
+    const error = await provider.generateJson(request).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(LlmError);
+    expect((error as LlmError).kind).toBe('server');
+    expect((error as LlmError).detail).toBe('503: The model is overloaded. Please try again later.');
+    expect(calls.map((c) => [usesModel(c, 'gemini-main'), hasSchema(c)])).toEqual([
+      [true, true],
+      [true, true],
+      [true, false],
+      [false, true],
+      [false, false],
+    ]);
+  });
+
+  it('server error with no fallback model: three attempts', async () => {
+    const { provider, calls } = setup([overloaded(), overloaded(), overloaded(), good()], { fallbackModel: undefined });
+    expect(await kindOf(provider.generateJson(request))).toBe('server');
+    expect(calls).toHaveLength(3);
+  });
+
+  it('a main model that kept failing is skipped for the next requests, then tried again later', async () => {
+    const first = setup([overloaded(), overloaded(), overloaded(), good()]);
+    await first.provider.generateJson(request);
+
+    const next = setup([good()]);
+    await next.provider.generateJson(request);
+    expect(next.calls).toHaveLength(1);
+    expect(usesModel(next.calls[0]!, 'gemini-lite')).toBe(true);
+
+    resetModelHealth();
+    const later = setup([good()]);
+    await later.provider.generateJson(request);
+    expect(usesModel(later.calls[0]!, 'gemini-main')).toBe(true);
   });
 
   it('400 with a schema: retries once with the bare minimum', async () => {
@@ -293,6 +361,32 @@ describe('failures', () => {
     expect(isUnavailable(new LlmError('no-key'))).toBe(true);
     expect(isUnavailable(new LlmError('blocked'))).toBe(false);
     expect(isUnavailable(new Error('x'))).toBe(false);
+  });
+});
+
+describe('testModels', () => {
+  it('asks each configured model for one word and reports which answer', async () => {
+    const { provider, calls } = setup([oldError(503, 'UNAVAILABLE', 'The model is overloaded.'), answer('ok')]);
+    expect(await provider.testModels()).toEqual([
+      { model: 'gemini-main', ok: false, detail: 'Il servizio del modello ha risposto con un errore. Riprova tra poco. (503: The model is overloaded.)' },
+      { model: 'gemini-lite', ok: true, detail: '' },
+    ]);
+    expect(calls).toHaveLength(2); // no retries: it is a quick check
+    expect(calls[0]!.headers['x-goog-api-key']).toBe(FAKE_KEY);
+    expect(calls[0]!.body.generationConfig).toBeUndefined();
+  });
+
+  it('tests one model when there is no separate fallback, and survives a network failure', async () => {
+    const { provider, calls } = setup([new TypeError('Failed to fetch')], { fallbackModel: 'gemini-main' });
+    const results = await provider.testModels();
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({ model: 'gemini-main', ok: false });
+    expect(calls).toHaveLength(1);
+  });
+
+  it('never shows the key', async () => {
+    const { provider } = setup([oldError(400, 'INVALID_ARGUMENT', `bad key ${FAKE_KEY}`), good()]);
+    expect(JSON.stringify(await provider.testModels())).not.toContain(FAKE_KEY);
   });
 });
 

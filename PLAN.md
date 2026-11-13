@@ -277,7 +277,7 @@ Not planned for now: "find the error", sentence transformation and dialogue comp
 |---|---|
 | 429 with a short retry delay | Wait and retry once |
 | 429 otherwise | Try the fallback model, then report "quota esaurita" |
-| 500 / 503 | Up to 2 retries with backoff |
+| 500 / 503 | Up to 2 retries with backoff. *Changed 2026-11-13 (session 5): retry once, then without the schema, then the fallback model; see 19.3* |
 | 400 with schema | Retry once without the schema, relying on zod |
 | Invalid JSON or schema mismatch | Retry once |
 | 401 / 403 | "Chiave non valida" |
@@ -526,6 +526,17 @@ Google's documentation has moved from `ai.google.dev` to `aistudio.google.com/do
 - *Look still too plain.* A second look, "Nuovo", is now the default; the original is kept as "Essenziale" and one tap in Impostazioni → Aspetto switches back. The new look only adds rules scoped to `data-theme='nuovo'` at the end of `src/styles.css`: indigo for main buttons, a muted gold for fine lines, a faint ink wash behind the page, a fret band under the header, tinted tiles for the exercise icons. To remove it for good, delete that block and set the default theme to `essenziale` in `src/lib/settings.ts`. It is also its own commit.
 - *"Can data be saved online, with a login?"* Not built. Explained to the owner; the options are recorded in 19.5.
 - *"Can other models be used, for example DeepSeek?"* Not built. Facts checked on the providers' documentation the same day and options recorded in 19.5.
+
+**2026-11-13, session 5 (early afternoon).** The owner deployed the app, used it with a real key, and reported three things.
+
+- *Look.* The fret band under the header ("swirls") and the lozenge bullets before section headings were disliked and are removed. In their place, one very faint brush stroke under the page title (ink) and under each section heading (vermilion): a single shape used as a CSS mask (`--brush`), so it takes the theme's colours. Everything else of the "Nuovo" look is unchanged.
+- ***First contact with the real Gemini API: every lesson import failed*** with "Il servizio del modello non risponde", even for one small Word file. That message is produced only when Google answers HTTP 5xx on every attempt, so the request reached Google and it was not the key, the quota, the network or the request size. The exact status and text were not captured, because the app did not show them. There is still no key on the development machine, so this could not be reproduced; the fix covers the two causes that fit:
+  1. the main model (`gemini-3.8-flash`) is overloaded on the free tier, and the client retried the same model without ever trying the fallback on a server error;
+  2. the service fails on the response schema, and the client dropped the schema only on a 400.
+- **New behaviour of the client on a server error** (replaces the "500 / 503: up to 2 retries" row of section 11): same request once more after 1.5 s; then without the schema option, with the schema written into the instructions instead; then the fallback model with the schema; then the fallback without it. Five attempts at most. When the fallback rescues a request, the main model is skipped for ten minutes.
+- **Diagnosis from the screen.** Every error now carries the HTTP status and the service's own words, shown in brackets (for example "(503: The model is overloaded…)"). Impostazioni has "Prova i modelli" (and "Verifica chiave" does the same): one tiny request to the main and the fallback model, reporting for each "risponde" or "non risponde" with the reason. A valid key does not mean a model is answering.
+- Ran and saw passing: 187 unit tests, type-check, lint, build, four browser scripts (39 + 36 + 30 + 16 = 121 checks), including a simulated overloaded main model that is rescued by the fallback after the documented sequence of attempts.
+- **Not verified:** that this fixes the owner's failure. Only the real API can tell. If it still fails, the bracketed text and the result of "Prova i modelli" say what Google answered; write them here.
 
 ### 19.5 Options discussed, not built (2026-11-13)
 

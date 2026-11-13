@@ -4,8 +4,9 @@ import { exportFileName, makeBackup } from '../../lib/backup.ts';
 import { askToPersist, downloadJson, persistence, usedMegabytes, type Persistence } from '../../lib/files.ts';
 import { resumeModel } from '../../lib/grading.ts';
 import { count } from '../../lib/italian.ts';
+import { resetModelHealth } from '../../lib/llm/gemini.ts';
 import { currentProvider } from '../../lib/llm/index.ts';
-import { LlmError } from '../../lib/llm/provider.ts';
+import { LlmError, type ModelTest } from '../../lib/llm/provider.ts';
 import {
   DEFAULT_FALLBACK_MODEL,
   DEFAULT_MODEL,
@@ -33,7 +34,10 @@ const THEME_OPTIONS: Array<[Theme, string]> = [
 /** Free-tier text models on 2026-11-11; "Verifica chiave" replaces this with what the key can really use. */
 const KNOWN_MODELS = [DEFAULT_MODEL, 'gemini-3.6-flash', DEFAULT_FALLBACK_MODEL, 'gemini-3.1-flash-lite'];
 
-type Check = { state: 'idle' | 'busy' } | { state: 'ok'; models: string[] } | { state: 'error'; message: string };
+type Check =
+  | { state: 'idle' | 'busy' }
+  | { state: 'ok'; models: string[]; tests: ModelTest[] }
+  | { state: 'error'; message: string };
 
 export function Settings() {
   const { data, prefs, setPrefs } = useStore();
@@ -66,12 +70,25 @@ export function Settings() {
     resumeModel(); // a new key deserves a new try
   };
 
+  const chooseModel = (patch: { model?: string; fallbackModel?: string }) => {
+    setPrefs(patch);
+    // A new choice deserves a fresh start: forget which models were failing and any earlier trial.
+    resetModelHealth();
+    resumeModel();
+    setCheck({ state: 'idle' });
+  };
+
   const verify = async () => {
     setCheck({ state: 'busy' });
     try {
-      setCheck({ state: 'ok', models: await currentProvider(prefs).listModels() });
+      // First the key (which models it may use), then each chosen model with a one-word request:
+      // a valid key does not mean that a model is answering right now.
+      const provider = currentProvider(prefs);
+      const available = await provider.listModels();
+      setCheck({ state: 'ok', models: available, tests: await provider.testModels() });
     } catch (e) {
-      setCheck({ state: 'error', message: e instanceof LlmError ? e.message : 'Verifica non riuscita.' });
+      const detail = e instanceof LlmError && e.detail ? ` (${e.detail})` : '';
+      setCheck({ state: 'error', message: e instanceof LlmError ? `${e.message}${detail}` : 'Verifica non riuscita.' });
     }
   };
 
@@ -153,20 +170,37 @@ export function Settings() {
         <h2 className="section-title">Modello</h2>
         <label className="field">
           <span>Principale</span>
-          <select className="input" value={prefs.model} onChange={(e) => setPrefs({ model: e.target.value })}>
+          <select className="input" value={prefs.model} onChange={(e) => chooseModel({ model: e.target.value })}>
             {models.map((m) => (
               <option key={m}>{m}</option>
             ))}
           </select>
         </label>
         <label className="field">
-          <span>Di riserva, se la quota del principale è finita</span>
-          <select className="input" value={prefs.fallbackModel} onChange={(e) => setPrefs({ fallbackModel: e.target.value })}>
+          <span>Di riserva, se il principale non risponde o ha finito la quota</span>
+          <select className="input" value={prefs.fallbackModel} onChange={(e) => chooseModel({ fallbackModel: e.target.value })}>
             {models.map((m) => (
               <option key={m}>{m}</option>
             ))}
           </select>
         </label>
+        {stored && (
+          <button type="button" className="btn" disabled={check.state === 'busy'} onClick={() => void verify()}>
+            {check.state === 'busy' ? 'Provo…' : 'Prova i modelli'}
+          </button>
+        )}
+        {check.state === 'ok' && (
+          <ul className="plain-list small" aria-label="Esito della prova dei modelli">
+            {check.tests.map((t) => (
+              <li key={t.model} className={t.ok ? 'notice' : 'notice bad'}>
+                <span className="mono">{t.model}</span>: {t.ok ? 'risponde' : `non risponde. ${t.detail}`}
+              </li>
+            ))}
+            {check.tests.some((t) => !t.ok) && check.tests.some((t) => t.ok) && (
+              <li className="muted">Scegli come principale un modello che risponde.</li>
+            )}
+          </ul>
+        )}
         <p className="muted small">Richieste inviate oggi da questo dispositivo: {used}.</p>
       </section>
 

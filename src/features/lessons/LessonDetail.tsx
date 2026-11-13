@@ -64,7 +64,8 @@ export function LessonDetail({ id }: { id: string }) {
       await refresh();
       setMessage(`Esercizi aggiunti: ${count(extra.sentences.length, 'frase', 'frasi')} e ${count(extra.clozes.length, 'completamento', 'completamenti')}.`);
     } catch (e) {
-      setMessage(e instanceof LlmError ? e.message : 'Non sono riuscito a generare gli esercizi.');
+      const detail = e instanceof LlmError && e.detail ? ` (${e.detail})` : '';
+      setMessage(e instanceof LlmError ? `${e.message}${detail}` : 'Non sono riuscito a generare gli esercizi.');
     } finally {
       setBusy(false);
     }
