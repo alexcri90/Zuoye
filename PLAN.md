@@ -538,6 +538,12 @@ Google's documentation has moved from `ai.google.dev` to `aistudio.google.com/do
 - Ran and saw passing: 187 unit tests, type-check, lint, build, four browser scripts (39 + 36 + 30 + 16 = 121 checks), including a simulated overloaded main model that is rescued by the fallback after the documented sequence of attempts.
 - **Not verified:** that this fixes the owner's failure. Only the real API can tell. If it still fails, the bracketed text and the result of "Prova i modelli" say what Google answered; write them here.
 
+**2026-11-13, session 6 (afternoon).** The owner (now writing in Italian) said the app is "almost perfect" and asked for two small corrections.
+
+- *Home-screen icon showed a pale ring at its edges* (Edge shortcut on the phone). The icon was a vermilion square on a paper-coloured margin; the launcher cuts icons to its own shape, so the margin showed. `scripts/make-icons.mjs` now draws the seal full-bleed (vermilion to the edges, no inner ring), with the two characters inside the central 80% circle every launcher keeps. The manifest lists the PNGs separately as `any` and as `maskable`. An icon already on the home screen keeps the old picture until the shortcut is removed and the app is added again.
+- *Header not centred.* In the "Nuovo" look the page header (seal + title on Home, the title elsewhere) and the brush stroke under it are now centred; a header button ("Chiudi") stays at the right edge. The thin second line of the brush shape was moved so the shape is symmetric. Section headings stay left-aligned. "Essenziale" is unchanged.
+- Ran and saw passing: lint, 187 unit tests, build, four browser scripts (121 checks); looked at the Home (dark), Impostazioni and Nuova lezione screenshots.
+
 ### 19.5 Options discussed, not built (2026-11-13)
 
 **Where data lives today.** Lessons, progress and the key are stored in the browser of each device, once; nothing has to be re-entered on later visits. Each device, and each person, has its own separate copy. Moving data is by file: a backup (everything) or a lesson pack (one lesson, no progress).

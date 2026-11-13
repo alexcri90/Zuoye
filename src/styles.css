@@ -1058,20 +1058,35 @@ select.input {
  * mask, so it takes its colour from the theme and stretches to any width.
  */
 :root[data-theme='nuovo'] {
-  --brush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 14' preserveAspectRatio='none'%3E%3Cpath d='M3 8C30 3 70 5 110 4.5S190 3 240 5.5 285 5 297 7.5C280 9.5 250 9 205 10S120 11.5 70 10.5 15 11 3 8Z'/%3E%3Cpath d='M38 12.6C90 12 150 13 222 12.2' fill='none' stroke='%23000' stroke-width='.7'/%3E%3C/svg%3E");
+  --brush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 14' preserveAspectRatio='none'%3E%3Cpath d='M3 8C30 3 70 5 110 4.5S190 3 240 5.5 285 5 297 7.5C280 9.5 250 9 205 10S120 11.5 70 10.5 15 11 3 8Z'/%3E%3Cpath d='M68 12.6C110 12 170 13 232 12.2' fill='none' stroke='%23000' stroke-width='.7'/%3E%3C/svg%3E");
 }
 
-/* Under the page header, in ink. */
+/* The page header is centred, with the stroke centred under it, in ink. */
 [data-theme='nuovo'] .page-head {
   position: relative;
+  justify-content: center;
   padding-bottom: 16px;
+}
+
+[data-theme='nuovo'] .page-head > .spacer {
+  display: none;
+}
+
+/* A button in the header (Chiudi) stays at the right edge, out of the centring. */
+[data-theme='nuovo'] .page-head > .btn {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 16px;
+  height: fit-content;
+  margin: auto 0;
 }
 
 [data-theme='nuovo'] .page-head::after {
   content: '';
   position: absolute;
-  left: -4px;
-  right: 12%;
+  left: 7%;
+  right: 7%;
   bottom: 0;
   height: 10px;
   background: var(--ink);

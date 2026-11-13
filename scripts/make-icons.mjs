@@ -12,12 +12,15 @@ const root = path.resolve(import.meta.dirname, '..');
 const pub = path.join(root, 'public');
 const strokes = (char) => JSON.parse(fs.readFileSync(path.join(root, 'node_modules', 'hanzi-writer-data', `${char}.json`), 'utf8')).strokes;
 
-const PAPER = '#f7f4ee';
+// The seal fills the whole square, with no paper margin: phones cut the icon
+// to their own shape (circle, squircle), and a light margin showed as a pale
+// ring around it. The characters stay inside the central circle (80% of the
+// side) that every launcher keeps.
 const VERMILION = '#c8372d';
 const INK_ON_SEAL = '#fff8f2';
 const SIZE = 512;
-const GLYPH = 132; // side of one character, in icon units
-const GAP = 8;
+const GLYPH = 140; // side of one character, in icon units
+const GAP = 10;
 
 /** One character placed with its top-left corner at (x, y). Stroke data is 1024 units wide, y pointing up. */
 function glyph(char, x, y) {
@@ -29,9 +32,7 @@ function glyph(char, x, y) {
 const left = SIZE / 2 - GLYPH - GAP / 2;
 const top = SIZE / 2 - GLYPH / 2;
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SIZE} ${SIZE}">
-  <rect width="${SIZE}" height="${SIZE}" fill="${PAPER}"/>
-  <rect x="96" y="96" width="320" height="320" rx="56" fill="${VERMILION}"/>
-  <rect x="114" y="114" width="284" height="284" rx="42" fill="none" stroke="${INK_ON_SEAL}" stroke-opacity=".28" stroke-width="6"/>
+  <rect width="${SIZE}" height="${SIZE}" fill="${VERMILION}"/>
   <g fill="${INK_ON_SEAL}">${glyph('作', left, top)}${glyph('业', left + GLYPH + GAP, top)}</g>
 </svg>
 `;
